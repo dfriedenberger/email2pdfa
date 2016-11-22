@@ -1,0 +1,100 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>de.frittenburger.mail2pdf</groupId>
+  <artifactId>Mail2PDF</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>Mail2PDF</name>
+  
+  <dependencies>
+
+  <dependency>
+    <groupId>com.itextpdf</groupId>
+    <artifactId>barcodes</artifactId>
+    <version>7.0.1</version>
+    <!-- barcodes depends on kernel -->
+  </dependency>
+
+  <dependency>
+    <groupId>com.itextpdf</groupId>
+    <artifactId>font-asian</artifactId>
+    <version>7.0.1</version>
+  </dependency>
+
+  <dependency>
+    <groupId>com.itextpdf</groupId>
+    <artifactId>forms</artifactId>
+    <version>7.0.1</version>
+    <!-- forms depends on kernel and layout -->
+  </dependency>
+
+  <dependency>
+      <groupId>com.itextpdf</groupId>
+      <artifactId>hyph</artifactId>
+      <version>7.0.1</version>
+  </dependency>
+
+  <dependency>
+    <groupId>com.itextpdf</groupId>
+    <artifactId>io</artifactId>
+    <version>7.0.1</version>
+  </dependency>
+
+  <dependency>
+    <groupId>com.itextpdf</groupId>
+    <artifactId>kernel</artifactId>
+    <version>7.0.1</version>
+    <!-- kernel depends on io -->
+  </dependency>
+
+  <dependency>
+    <groupId>com.itextpdf</groupId>
+    <artifactId>layout</artifactId>
+    <version>7.0.1</version>
+    <!-- layout depends on kernel -->
+  </dependency>
+
+  <dependency>
+    <groupId>com.itextpdf</groupId>
+    <artifactId>pdfa</artifactId>
+    <version>7.0.1</version>
+    <!-- pdfa depends on kernel -->
+  </dependency>
+
+  <dependency>
+    <groupId>com.itextpdf</groupId>
+    <artifactId>sign</artifactId>
+    <version>7.0.1</version>
+    <!-- sign depends on kernel, layout and forms -->
+  </dependency>
+
+  <dependency>
+    <groupId>javax.mail</groupId>
+    <artifactId>mail</artifactId>
+    <version>1.4</version>
+  </dependency>
+
+
+ <dependency>
+	<groupId>org.jsoup</groupId>
+	<artifactId>jsoup</artifactId>
+	<version>1.7.2</version>
+  </dependency>
+  
+
+  
+ <dependency>
+ 	<groupId>com.fasterxml.jackson.core</groupId>
+ 	<artifactId>jackson-databind</artifactId>
+ 	<version>2.6.3</version>
+ </dependency>
+
+
+ <dependency>
+ 	<groupId>com.fasterxml.jackson.core</groupId>
+ 	<artifactId>jackson-core</artifactId>
+ 	<version>2.6.3</version>
+ </dependency>
+ 
+  </dependencies>
+  
+</project>
