@@ -3,7 +3,7 @@ Use case and workflow to convert email to the long term preservation format PDF/
 
 ![email2pdfa](https://raw.githubusercontent.com/dfriedenberger/email2pdfa/master/email2pdfa.png)
 
-I've composed wonderful components to solve my problem preserving emails for donkey years.
+I've composed wonderful components to solve the problem preserving emails for easy, long term backup.
 
 - JavaMail  - Api for polling email
 - PhantomJS - Full web stack for building view of HTML part of email
