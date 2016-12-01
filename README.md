@@ -31,5 +31,5 @@ Dirk Friedenberger, Waldaschaff, Germany
 Write me (oder Schreibe mir)
 projekte@frittenburger.de
 
-ImmerArchiv.de ist ein Langzeitarchiv
+https://ImmerArchiv.de ist ein Langzeitarchiv
 
