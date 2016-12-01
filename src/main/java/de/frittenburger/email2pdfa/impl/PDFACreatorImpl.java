@@ -23,13 +23,18 @@ package de.frittenburger.email2pdfa.impl;
  *  This copyright notice MUST APPEAR in all copies of the script!
  */
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import javax.imageio.ImageIO;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.barcodes.BarcodeQRCode;
@@ -65,13 +70,19 @@ import de.frittenburger.email2pdfa.interfaces.Sandbox;
 
 public class PDFACreatorImpl implements PDFACreator {
 
+	private static final String AttachmentTypeUnknown = "unknown";
+	private static final String AttachmentTypeImage = "image";
+	private static final String AttachmentTypeScreen = "screen";
+
+
+
 	public void convert(String messagePath, Sandbox sandbox) throws IOException {
 
 		ObjectMapper mapper = new ObjectMapper();
 		EmailHeader header = mapper.readValue(new File(messagePath + "/emailheader.json"), EmailHeader.class);
 
-		List<String> images = new ArrayList<String>();
-		resolveFiles(new File(messagePath), images, ".png");
+		Map<String,List<String>> files = new HashMap<String,List<String>>();
+		resolveFiles(new File(messagePath), files);
 
 		String path = sandbox.getArchivPath() + "/" + header.senderkey;
 
@@ -109,6 +120,9 @@ public class PDFACreatorImpl implements PDFACreator {
 		p1.add(new Text("000").setFont(font).setFontSize(6));
 		document.add(p1);
 
+		
+		
+		//CreateQRCodeImage
 		BarcodeQRCode barcode = new BarcodeQRCode();
 		barcode.setCode(header.mesgkey);
 
@@ -122,37 +136,76 @@ public class PDFACreatorImpl implements PDFACreator {
 
 		// Embed fonts
 
-		// Add Image
-
-		for (String imgFile : images) {
-			document.add(new AreaBreak());
-			Rectangle rect = pdf.getFirstPage().getPageSize();
-
-			document.setMargins(20, 20, 20, 20);
-			Image img = new Image(ImageDataFactory.create(imgFile));
-			img.scaleToFit(rect.getWidth(), rect.getHeight());
-			img.setFixedPosition(0, 0);
-
-			document.add(img);
-		}
+		// Add ScreenShots
+		List<String> images = files.get(AttachmentTypeScreen);
+		if(image != null)
+			for (String imgFile : images) {
+				
+				Rectangle rect = pdf.getFirstPage().getPageSize();
+				
+				Image img = new Image(ImageDataFactory.create(imgFile));
+				float imgWidth = img.getImageWidth();
+				float imgHeight = img.getImageHeight();
+				float offsetx = 0;
+				
+				if(imgWidth < rect.getWidth())
+				{
+					offsetx = (rect.getWidth() - imgWidth) / 2;
+				}
+				else
+				{
+					imgHeight *= rect.getWidth() / imgWidth;
+					imgWidth = rect.getWidth();
+				}
+				
+				int parts =  (int) (imgHeight / rect.getHeight());
+				
+				for(int i = 1;i <= parts + 1;i++)
+				{
+					float yoffset = -1 * imgHeight + i * rect.getHeight();
+					document.add(new AreaBreak());
+					img.scaleToFit(imgWidth, imgHeight);
+					img.setFixedPosition(offsetx, yoffset);
+					document.add(img);
+				}
+			}
 
 		// Close document
 		document.close();
 
 	}
 
-	private void resolveFiles(File path, List<String> files, String ext) {
-
+	private void resolveFiles(File path, Map<String, List<String>> files) {
+	
 		for (File f : path.listFiles()) {
 			if (f.isDirectory())
-				resolveFiles(f, files, ext);
-
-			if (f.getName().endsWith(ext))
-				files.add(f.getPath());
+				resolveFiles(f, files);
+			else
+			{
+				/* Dateien Typisieren */
+				String key = AttachmentTypeUnknown;
+				if( f.getName().endsWith(".png") 
+						|| f.getName().endsWith(".jpg")
+						|| f.getName().endsWith(".gif"))
+				{
+					key = AttachmentTypeImage;
+					if(f.getName().startsWith("screen_")) //TODO Defines
+						key = AttachmentTypeScreen;
+				}
+				
+				if(!files.containsKey(key))
+					files.put(key, new ArrayList<String>());
+			
+				files.get(key).add(f.getPath());
+			
+			}
 
 		}
 
+		
 	}
+
+
 
 	private void addAttachment(PdfADocument pdf, String filename) throws IOException {
 		PdfDictionary parameters = new PdfDictionary();

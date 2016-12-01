@@ -24,6 +24,8 @@ package de.frittenburger.email2pdfa;
  */
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 import de.frittenburger.email2pdfa.interfaces.Sandbox;
 
@@ -80,11 +82,30 @@ public class SandBoxTestImpl implements Sandbox {
 		new File(path).mkdir();
 		String testpath = path+ "/" + class1.getSimpleName();
 		new File(testpath).mkdir();
+		
+		//clean folder
+		try
+		{
+			for(File f : new File(testpath).listFiles())
+				delete(f);
+		}
+		catch(IOException io)
+		{
+			throw new RuntimeException(io);
+		}
+		
 		return testpath;
 		
 	}
 
-	
+	static void  delete(File f) throws IOException {
+		  if (f.isDirectory()) {
+		    for (File c : f.listFiles())
+		      delete(c);
+		  }
+		  if (!f.delete())
+		    throw new FileNotFoundException("Failed to delete file: " + f);
+		}
 
 	
 
