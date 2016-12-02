@@ -23,18 +23,23 @@ package de.frittenburger.email2pdfa.impl;
  *  This copyright notice MUST APPEAR in all copies of the script!
  */
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.Security;
+import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.imageio.ImageIO;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.barcodes.BarcodeQRCode;
@@ -51,6 +56,7 @@ import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocumentInfo;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfOutputIntent;
+import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.PdfViewerPreferences;
 import com.itextpdf.kernel.pdf.PdfWriter;
@@ -63,8 +69,16 @@ import com.itextpdf.layout.element.Image;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Text;
 import com.itextpdf.pdfa.PdfADocument;
+import com.itextpdf.signatures.BouncyCastleDigest;
+import com.itextpdf.signatures.DigestAlgorithms;
+import com.itextpdf.signatures.IExternalDigest;
+import com.itextpdf.signatures.IExternalSignature;
+import com.itextpdf.signatures.PdfSignatureAppearance;
+import com.itextpdf.signatures.PdfSigner;
+import com.itextpdf.signatures.PrivateKeySignature;
 
 import de.frittenburger.email2pdfa.bo.EmailHeader;
+import de.frittenburger.email2pdfa.bo.PdfCreatorSignatureData;
 import de.frittenburger.email2pdfa.interfaces.PDFACreator;
 import de.frittenburger.email2pdfa.interfaces.Sandbox;
 
@@ -75,8 +89,7 @@ public class PDFACreatorImpl implements PDFACreator {
 	private static final String AttachmentTypeScreen = "screen";
 
 
-
-	public void convert(String messagePath, Sandbox sandbox) throws IOException {
+	public void convert(PdfCreatorSignatureData signatureData, String messagePath, Sandbox sandbox) throws IOException, GeneralSecurityException {
 
 		ObjectMapper mapper = new ObjectMapper();
 		EmailHeader header = mapper.readValue(new File(messagePath + "/emailheader.json"), EmailHeader.class);
@@ -92,11 +105,17 @@ public class PDFACreatorImpl implements PDFACreator {
 		String FONT = "src/main/resources/font/FreeSans.ttf";
 
 		String dest = path + "/" + header.mesgkey + ".pdf";
+		String dest_signed = path + "/" + header.mesgkey + "_signed.pdf";
 
 		if (new File(dest).exists())
 			return; // Auf Datei pruefen, da im Folder mehrere Emails liegen
 
-		PdfADocument pdf = new PdfADocument(new PdfWriter(dest), PdfAConformanceLevel.PDF_A_3A, new PdfOutputIntent(
+		
+		
+		PdfWriter writer = new PdfWriter(dest);
+		
+		
+		PdfADocument pdf = new PdfADocument(writer, PdfAConformanceLevel.PDF_A_3A, new PdfOutputIntent(
 				"Custom", "", "http://www.color.org", "sRGB IEC61966-2.1", new FileInputStream(INTENT)));
 
 		// Setting some required parameters
@@ -173,6 +192,45 @@ public class PDFACreatorImpl implements PDFACreator {
 		// Close document
 		document.close();
 
+		
+		signDocument(signatureData,dest,dest_signed);
+	
+	}
+
+	private void signDocument(PdfCreatorSignatureData signatureData, String src, String dest) throws GeneralSecurityException, IOException {
+		
+        BouncyCastleProvider provider = new BouncyCastleProvider();
+        Security.addProvider(provider);
+        
+        KeyStore ks = KeyStore.getInstance("pkcs12", provider.getName());
+        ks.load(new FileInputStream(signatureData.keyStorePath), signatureData.keyStorePassword.toCharArray());
+        String alias = ks.aliases().nextElement();
+        System.out.println("alias = "+alias);
+        PrivateKey pk = (PrivateKey) ks.getKey(alias, signatureData.privateKeyPassword.toCharArray());
+        Certificate[] chain = ks.getCertificateChain(alias);
+        
+        String digestAlgorithm = DigestAlgorithms.SHA256;
+        String providerName = provider.getName();
+        PdfSigner.CryptoStandard subfilter = PdfSigner.CryptoStandard.CMS;
+        
+		// Creating the reader and the signer
+        PdfReader reader = new PdfReader(src);
+        PdfSigner signer = new PdfSigner(reader, new FileOutputStream(dest), false);
+        // Creating the appearance
+        PdfSignatureAppearance appearance = signer.getSignatureAppearance()
+                .setReason("TestReason")
+                .setLocation("TestLocation")
+                .setReuseAppearance(false);
+        Rectangle rect = new Rectangle(36, 648, 200, 100);
+        appearance
+                .setPageRect(rect)
+                .setPageNumber(1);
+        signer.setFieldName("sig");
+        // Creating the signature
+        IExternalSignature pks = new PrivateKeySignature(pk, digestAlgorithm, providerName);
+        IExternalDigest digest = new BouncyCastleDigest();
+        signer.signDetached(digest, pks, chain, null, null, null, 0, subfilter);
+		
 	}
 
 	private void resolveFiles(File path, Map<String, List<String>> files) {
@@ -221,4 +279,5 @@ public class PDFACreatorImpl implements PDFACreator {
 
 	}
 
+	
 }

@@ -25,6 +25,9 @@ package de.frittenburger.email2pdfa;
 
 import org.junit.Test;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
+
+import de.frittenburger.email2pdfa.bo.PdfCreatorSignatureData;
 import de.frittenburger.email2pdfa.impl.PDFACreatorImpl;
 import de.frittenburger.email2pdfa.interfaces.PDFACreator;
 
@@ -33,10 +36,16 @@ public class TestCreatePdf {
 	private static String out = SandBoxTestImpl.getTestPath(TestCreatePdf.class);
 
 	@Test
-	public void test() throws IOException {
+	public void test() throws IOException, GeneralSecurityException {
 			
 			PDFACreator pdfCreator = new PDFACreatorImpl();
-			pdfCreator.convert("src/test/resources/data/testmail1", new SandBoxTestImpl().setArchivPath(out));
+			PdfCreatorSignatureData pdfCreatorSignatureData = new PdfCreatorSignatureData();
+
+			pdfCreatorSignatureData.keyStorePath = "src/test/resources/keystores/demo-rsa.p12";
+			pdfCreatorSignatureData.keyStorePassword = "demo";
+			pdfCreatorSignatureData.privateKeyPassword = "";
+			
+			pdfCreator.convert(pdfCreatorSignatureData,"src/test/resources/data/testmail1", new SandBoxTestImpl().setArchivPath(out));
 			
 	}
 

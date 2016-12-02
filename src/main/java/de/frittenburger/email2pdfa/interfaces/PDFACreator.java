@@ -24,9 +24,12 @@ package de.frittenburger.email2pdfa.interfaces;
  */
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
+
+import de.frittenburger.email2pdfa.bo.PdfCreatorSignatureData;
 
 public interface PDFACreator {
 
-	void convert(String messagePath, Sandbox sandbox) throws IOException;
+	void convert(PdfCreatorSignatureData pdfCreatorSignatureData, String messagePath, Sandbox sandbox) throws IOException, GeneralSecurityException;
 
 }

@@ -28,11 +28,13 @@ import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.Properties;
 
 
 import de.frittenburger.email2pdfa.bo.EmailServiceAccountData;
 import de.frittenburger.email2pdfa.bo.MimeMessageParserException;
+import de.frittenburger.email2pdfa.bo.PdfCreatorSignatureData;
 import de.frittenburger.email2pdfa.impl.ContentConverterImpl;
 import de.frittenburger.email2pdfa.impl.EmailServiceImpl;
 import de.frittenburger.email2pdfa.impl.MimeMessageParserImpl;
@@ -76,7 +78,8 @@ public class Converter {
 			}	
 			else if(args[i].toLowerCase().startsWith("create"))
 			{
-				createPdfs(sandbox);
+				String config = String.format("config/%s.properties",args[++i]);
+				createPdfs(config,sandbox);
 			}	
 			else
 			{
@@ -96,7 +99,7 @@ public class Converter {
 		System.out.println("poll [box] - for polling emails");
 		System.out.println("parse - parse and extract emails");
 		System.out.println("convert - create screenshots from html parts");
-		System.out.println("create - create pdf/a files");
+		System.out.println("create [sign] - create pdf/a files and sign them");
 	}
 
 
@@ -162,7 +165,26 @@ public class Converter {
 	}
 
 	
-	private static void createPdfs(Sandbox sandbox) throws IOException {
+	private static void createPdfs(String propertyFile, Sandbox sandbox) throws IOException, GeneralSecurityException {
+		
+		PdfCreatorSignatureData pdfCreatorSignatureData = new PdfCreatorSignatureData();
+		
+		Properties properties = new Properties();
+		FileInputStream is = null;
+		try
+		{
+			is = new FileInputStream(propertyFile);
+			properties.load(is);
+		}
+		finally {
+			if(is != null)
+				is.close();
+		}
+		
+		pdfCreatorSignatureData.keyStorePath = properties.getProperty("keystorepath");
+		pdfCreatorSignatureData.keyStorePassword = properties.getProperty("keystorepassword");
+		pdfCreatorSignatureData.privateKeyPassword = properties.getProperty("privatekeypassword");
+
 		PDFACreator pdfCreator = new PDFACreatorImpl();
 		for (File folder : new File(sandbox.getContentPath()).listFiles(new FileFilter() {
 
@@ -171,7 +193,7 @@ public class Converter {
 			}
 		})) {
 			System.out.println("Convert " + folder.getPath());
-			pdfCreator.convert(folder.getPath(), sandbox);
+			pdfCreator.convert(pdfCreatorSignatureData, folder.getPath(), sandbox);
 		}
 		
 	}

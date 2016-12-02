@@ -1,0 +1,16 @@
+
+
+"C:\OpenSSL-Win64\bin\openssl.exe" 
+
+Key erzeugen
+openssl genrsa -out private.pem 2048
+
+//Cert Request erzeugen
+openssl req -new -key private.pem -out cacert.csr
+
+//SelfSigned
+openssl x509 -req -days 365 -in cacert.csr -signkey private.pem -out cacert.crt
+
+
+//pk12 store erzeugen
+openssl pkcs12 -export -in cacert.crt -inkey private.pem -out demo-rsa.p12 -name "mykey"

@@ -2,4 +2,6 @@
 *.properties
 # Except this file
 !default.properties
+!sign.properties
+
 
