@@ -1,7 +1,12 @@
 # Ignore everything in this directory
-*.properties
+
+*
 # Except this file
+
+!.gitignore
 !default.properties
+
 !sign.properties
+
 
 

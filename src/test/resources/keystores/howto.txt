@@ -9,7 +9,7 @@ openssl genrsa -out private.pem 2048
 openssl req -new -key private.pem -out cacert.csr
 
 //SelfSigned
-openssl x509 -req -days 365 -in cacert.csr -signkey private.pem -out cacert.crt
+openssl x509 -req -days 365 -in cacert.csr -signkey private.pem -out cacert.crt [-config openssl.cfg]
 
 
 //pk12 store erzeugen
