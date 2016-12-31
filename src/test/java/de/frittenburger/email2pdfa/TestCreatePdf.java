@@ -44,6 +44,8 @@ public class TestCreatePdf {
 			pdfCreatorSignatureData.keyStorePath = "src/test/resources/keystores/demo-rsa.p12";
 			pdfCreatorSignatureData.keyStorePassword = "demo";
 			pdfCreatorSignatureData.privateKeyPassword = "";
+			pdfCreatorSignatureData.location = "irgendwo";
+			pdfCreatorSignatureData.reason = "deshalb";
 			
 			pdfCreator.convert(pdfCreatorSignatureData,"src/test/resources/data/testmail1", new SandBoxTestImpl().setArchivPath(out));
 			

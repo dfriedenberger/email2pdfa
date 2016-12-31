@@ -184,7 +184,9 @@ public class Converter {
 		pdfCreatorSignatureData.keyStorePath = properties.getProperty("keystorepath");
 		pdfCreatorSignatureData.keyStorePassword = properties.getProperty("keystorepassword");
 		pdfCreatorSignatureData.privateKeyPassword = properties.getProperty("privatekeypassword");
-
+		pdfCreatorSignatureData.location = properties.getProperty("location");
+		pdfCreatorSignatureData.reason = properties.getProperty("reason");
+		
 		PDFACreator pdfCreator = new PDFACreatorImpl();
 		for (File folder : new File(sandbox.getContentPath()).listFiles(new FileFilter() {
 

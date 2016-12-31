@@ -218,8 +218,8 @@ public class PDFACreatorImpl implements PDFACreator {
         PdfSigner signer = new PdfSigner(reader, new FileOutputStream(dest), false);
         // Creating the appearance
         PdfSignatureAppearance appearance = signer.getSignatureAppearance()
-                .setReason("TestReason")
-                .setLocation("TestLocation")
+                .setReason(signatureData.reason)
+                .setLocation(signatureData.location)
                 .setReuseAppearance(false);
         Rectangle rect = new Rectangle(36, 648, 200, 100);
         appearance

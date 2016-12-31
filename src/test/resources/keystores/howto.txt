@@ -14,3 +14,7 @@ openssl x509 -req -days 365 -in cacert.csr -signkey private.pem -out cacert.crt 
 
 //pk12 store erzeugen
 openssl pkcs12 -export -in cacert.crt -inkey private.pem -out demo-rsa.p12 -name "mykey"
+
+
+
+openssl pkcs12 -export -in 1eb6c94f42dba4d134ca9d99d543e3a0.pem -inkey privateDF.pem -out rsaDF.p12 -name "dirkfriedenberger"

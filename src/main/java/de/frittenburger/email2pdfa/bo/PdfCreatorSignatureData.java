@@ -5,5 +5,7 @@ public class PdfCreatorSignatureData {
 	public String keyStorePath;
 	public String keyStorePassword;
 	public String privateKeyPassword;
-	
+	public String location;
+	public String reason;
+
 }
