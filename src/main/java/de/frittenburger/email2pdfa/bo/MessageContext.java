@@ -23,17 +23,31 @@ package de.frittenburger.email2pdfa.bo;
  *  This copyright notice MUST APPEAR in all copies of the script!
  */
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class MessageContext {
 
-	public String mesgPath; //SandboxPath
+	
 	public String encoding;
 	
-	public String contentFilename;
+	public String contentFilename = null;
+	public String contentId = null;
+	public Map<String,String> contentIdMapping = new HashMap<String,String>();
 
-	public Set<String> pathCache = new HashSet<String>();
 	
-
+	
+	public String rootPath = null; //SandboxPath
+	public String relavtivePath = ""; //relativer Pfad
+	public Set<String> pathCache = new HashSet<String>();
+	public List<String> order = new ArrayList<String>();
+	
+	public String mesgPath() {
+		return rootPath + relavtivePath;
+	}
+	
 }

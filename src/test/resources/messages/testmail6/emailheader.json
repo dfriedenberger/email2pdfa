@@ -1,0 +1,10 @@
+{
+  "mesgkey" : "test@example.org_abc",
+  "senderkey" : "test@example.org",
+  "date" : [ "Tue, 13 Dec 2016 20:57:51 +0100" ],
+  "from" : [ {
+    "name" : null,
+    "address" : "test@example.org"
+  } ],
+  "subject" : "test"
+}

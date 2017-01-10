@@ -16,8 +16,10 @@ page.viewportSize = { width: 1024, height: 768 };
 console.log('The default user agent is ' + page.settings.userAgent);
 page.settings.userAgent = 'SpecialAgent';
 
-
+console.log('open ' + address);
 page.open(address, function (status) {
+    console.log('Open status=' +  status);
+
     if (status !== 'success') {
         console.log('Unable to load the address!');
         phantom.exit();
@@ -25,6 +27,7 @@ page.open(address, function (status) {
     	
     	//Set white background if page is transparent
     	page.evaluate(function() {
+              console.log('Evaluate Page');
     		  var style = document.createElement('style'),
     		      text = document.createTextNode('body { background: #fff }');
     		  style.setAttribute('type', 'text/css');
@@ -33,6 +36,8 @@ page.open(address, function (status) {
     		});
     	
         window.setTimeout(function () {
+            console.log('render ' +  imagefile);
+
 			//page.render(imagefile, { format: 'jpeg', quality: '100'} );
 			page.render(imagefile );
             phantom.exit();

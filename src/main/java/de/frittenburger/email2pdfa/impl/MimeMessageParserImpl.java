@@ -30,6 +30,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.util.Properties;
@@ -56,50 +58,89 @@ public class MimeMessageParserImpl implements MimeMessageParser {
 	private NameService nameService = new NameServiceImpl();
 
 	private static final String emailheaderjsonfile = "emailheader.json";
+	private static final String mappingjsonfile = "mapping.json";
+	private static final String orderjsonfile = "order.json";
 
+	@Override
+	public String getTargetDir(String emlFile, Sandbox sandbox) throws MimeMessageParserException {
+		
+		try
+		{
+			MimeMessage mime = readMime(emlFile);
+			
+			EmailHeader header = nameService.getEmailHeader(mime);
+	
+			return getRootPath(sandbox,header);
+		
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new MimeMessageParserException(e);
+		} catch (MessagingException e) {
+			e.printStackTrace();
+			throw new MimeMessageParserException(e);
+		} catch (GeneralSecurityException e) {
+			e.printStackTrace();
+			throw new MimeMessageParserException(e);
+		} catch (ParseException e) {
+			e.printStackTrace();
+			throw new MimeMessageParserException(e);
+		}
+	}
+	
+
+
+	private String getRootPath(Sandbox sandbox, EmailHeader header) {
+		return sandbox.getMessagePath() + "/" + header.mesgkey;
+	}
+
+
+
+	@Override
 	public void parse(String emlFile, Sandbox sandbox) throws MimeMessageParserException {
 
 		
 		System.out.println("read "+emlFile);
 		try {
-			Properties props = new Properties();
-			Session session = Session.getDefaultInstance(props, null);
-			InputStream is = null;
-			MimeMessage mime = null;
-			try {
-				is = new FileInputStream(emlFile);
-				mime = new MimeMessage(session, is);
-			} finally {
-				if (is != null)
-					is.close();
-				is = null;
-			}
+			
+			MimeMessage mime = readMime(emlFile);
 
 			EmailHeader header = nameService.getEmailHeader(mime);
 			MessageContext messageContext = new MessageContext();
-
-			messageContext.mesgPath = sandbox.getMessagePath() + "/" + header.mesgkey;
-
-			//Create Path
-			File mesgDirectory = new File(messageContext.mesgPath);
+			messageContext.rootPath = getRootPath(sandbox,header);
 			
-			if(mesgDirectory.exists())
+			//Create Path
+			File mesgDirectory = new File(messageContext.rootPath);
+			
+			if(!mesgDirectory.exists())
 			{
-				System.out.println(messageContext.mesgPath+" exists");
-				return;
+				mesgDirectory.mkdir();
 			}
-			mesgDirectory.mkdir();
 
 			//Create emailheader.json
 			ObjectMapper mapper = new ObjectMapper();
-			mapper.writerWithDefaultPrettyPrinter().writeValue(new File(messageContext.mesgPath + "/" + emailheaderjsonfile),
+			mapper.writerWithDefaultPrettyPrinter().writeValue(new File(messageContext.rootPath + "/" + emailheaderjsonfile),
 					header);
 
 			//Parse content
 			messageContext.encoding = mime.getEncoding();
 			messageContext.contentFilename = null;
-			parseContent(messageContext, mime.getContent(), mime.getContentType(), mime.getDisposition());
+			messageContext.contentId = null;
+			
+			
 
+			parseContent(messageContext, mime.getContent(), mime.getContentType(), mime.getDisposition());
+			
+			//Create order.json
+			mapper.writerWithDefaultPrettyPrinter().writeValue(new File(messageContext.rootPath + "/" + orderjsonfile),
+					messageContext.order);
+			
+			//Create mapping.json
+			if(messageContext.contentIdMapping.size() > 0)
+			{
+				mapper.writerWithDefaultPrettyPrinter().writeValue(new File(messageContext.rootPath + "/" + mappingjsonfile),
+						messageContext.contentIdMapping);
+			}
+			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 			throw new MimeMessageParserException(e);
@@ -119,6 +160,23 @@ public class MimeMessageParserImpl implements MimeMessageParser {
 
 	}
 
+	private MimeMessage readMime(String emlFile) throws IOException, MessagingException {
+		Properties props = new Properties();
+		Session session = Session.getDefaultInstance(props, null);
+		InputStream is = null;
+		MimeMessage mime = null;
+		try {
+			is = new FileInputStream(emlFile);
+			mime = new MimeMessage(session, is);
+			return mime;
+		} finally {
+			if (is != null)
+				is.close();
+			is = null;
+		}
+	}
+	
+	
 	private void parseContent(MessageContext mesgContext, Object msgContent, String contentType, String disposition)
 			throws IOException, MessagingException {
 
@@ -132,15 +190,17 @@ public class MimeMessageParserImpl implements MimeMessageParser {
 			// "+multipart.getContentType());
 
 			// Pfad anlegen
-			String saveMesgPath = mesgContext.mesgPath;
-			mesgContext.mesgPath = nameService.getFolder(mesgContext, ct);
-			new File(mesgContext.mesgPath).mkdir();
+			String saveMesgPath = mesgContext.relavtivePath;
+			mesgContext.relavtivePath = nameService.getFolder(mesgContext, ct);
+			mesgContext.order.add(mesgContext.relavtivePath.substring(1));
+			new File(mesgContext.mesgPath()).mkdir();
 			
 			for (int j = 0; j < multipart.getCount(); j++) {
 
 				BodyPart bodyPart = multipart.getBodyPart(j);
 
 				mesgContext.contentFilename = null;
+				mesgContext.contentId = null;
 
 				// has Filename?
 				String filename = bodyPart.getFileName();
@@ -150,19 +210,38 @@ public class MimeMessageParserImpl implements MimeMessageParser {
 
 				String[] contentID = bodyPart.getHeader("Content-ID");
 				if (contentID != null) {
-					mesgContext.contentFilename = nameService.parseContentId(contentID[0].trim());
+					mesgContext.contentId = nameService.parseContentId(contentID[0].trim());
 				}
 				parseContent(mesgContext, bodyPart.getContent(), bodyPart.getContentType(), bodyPart.getDisposition());
 			}
+			
+			
 			// Ruecksetzen
-			mesgContext.mesgPath = saveMesgPath;
+			mesgContext.relavtivePath = saveMesgPath;
 
 		} else {
 
 			if (msgContent instanceof String) {
 				String str = (String) msgContent;
-				save(mesgContext, new ByteArrayInputStream(str.getBytes()), ct);
-
+				Charset charset = StandardCharsets.UTF_8;
+				
+				//set output charset to referenced
+				if(ct.getBaseType().equals("text/html"))
+				{
+					try
+					{
+						String charsetStr = ct.getParameter("charset");
+						if(charsetStr != null)
+							charset = Charset.forName(charsetStr);
+					}
+					catch(Exception e)
+					{
+						throw new RuntimeException("Could not convert: " + ct.toString()+ " ex="+ e.getMessage());
+					}
+				}
+				
+				
+				save(mesgContext, new ByteArrayInputStream(str.getBytes(charset)), ct);
 			} else if (msgContent instanceof InputStream) {
 				// BASE64DecoderStream
 				// QPDecoderStream
@@ -186,7 +265,7 @@ public class MimeMessageParserImpl implements MimeMessageParser {
 
 		System.out.println("fileName " + mesgContext.contentFilename);
 
-		FileOutputStream out = new FileOutputStream(mesgContext.mesgPath + "/" + mesgContext.contentFilename);
+		FileOutputStream out = new FileOutputStream(mesgContext.mesgPath() + "/" + mesgContext.contentFilename);
 		byte[] buffer = new byte[1024];
 		int len = in.read(buffer);
 		while (len != -1) {
@@ -195,7 +274,16 @@ public class MimeMessageParserImpl implements MimeMessageParser {
 		}
 
 		out.close();
-
+		
+		String relpath = new String(mesgContext.relavtivePath + "/" + mesgContext.contentFilename).substring(1);
+		mesgContext.order.add(relpath);
+		if(mesgContext.contentId != null)
+		{
+			//create mapping
+			mesgContext.contentIdMapping.put(mesgContext.contentId,relpath);
+		}
 	}
+
+	
 
 }

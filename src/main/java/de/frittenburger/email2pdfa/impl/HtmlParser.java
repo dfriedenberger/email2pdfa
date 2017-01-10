@@ -24,9 +24,13 @@ package de.frittenburger.email2pdfa.impl;
  */
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -34,38 +38,54 @@ import org.jsoup.nodes.Element;
 
 public class HtmlParser {
 
-	public void replaceContentIds(String srcPath, String destPath) throws IOException {
+	public Set<String> replaceContentIds(String srcPath, String destPath, String path , Map<String, String> mapping) throws IOException {
 		
-		
+		Set<String> usedFiles = new HashSet<String>();
 		String unsafe = readFile(srcPath);
 		//String safe = Jsoup.clean(unsafe, Whitelist.basic());
 		Document doc = Jsoup.parse(unsafe);
 
 
 		
+		
 		for(Element e : doc.select("[src]"))
 		{
 			String src = e.attr("src");
 			if(src.startsWith("cid:"))
 			{
-				e.attr("src",src.substring(4));
-				System.out.println(e);
+				String id = src.substring(4);
+				String relPath = mapping.get(id);
+				usedFiles.add(relPath);
+				File file = new File(path + "/" + relPath);
+
+				if(!file.exists())
+					throw new IOException(file + " not exists");
+						
+				e.attr("src",file.getName());
 			}
 		}
+		
 		for(Element e : doc.select("[href]"))
 		{
 			String href = e.attr("href");
 			if(href.startsWith("cid:"))
 			{
-				e.attr("href",href.substring(4));
-				System.out.println(e);
+				String id = href.substring(4);
+				String relPath = mapping.get(id);
+				usedFiles.add(relPath);
+				File file = new File(path + "/" + relPath);
+
+				if(!file.exists())
+					throw new IOException(file + " not exists");
+				
+				e.attr("href",file.getName());
 			}
 		}
 		
 		
 		saveFile(doc.toString(),destPath);
 		
-		
+		return usedFiles;
 		
 	}
 

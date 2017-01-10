@@ -4,9 +4,4 @@
 # Except this file
 
 !.gitignore
-!default.properties
-
-!sign.properties
-
-
-
+!*.properties.template

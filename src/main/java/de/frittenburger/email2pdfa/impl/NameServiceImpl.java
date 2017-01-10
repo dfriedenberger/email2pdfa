@@ -122,6 +122,7 @@ public class NameServiceImpl implements NameService {
 
 		if(baseType.equals("image/jpeg")) return ".jpg";
 		if(baseType.equals("image/gif")) return ".gif";
+		if(baseType.equals("image/png")) return ".png";
 
 		if(baseType.equals("application/pdf")) return ".pdf";
 
@@ -162,10 +163,10 @@ public class NameServiceImpl implements NameService {
 		
 				for(int i = 1;i < 999;i++)
 				{
-					String fullname = mesgContext.mesgPath + "/" + String.format("%s%03d", multipartType,i);
-					if(mesgContext.pathCache.contains(fullname)) continue;
-					mesgContext.pathCache.add(fullname);
-					return fullname;			
+					String name = mesgContext.relavtivePath + "/" + String.format("%s%03d", multipartType,i);
+					if(mesgContext.pathCache.contains(name)) continue;
+					mesgContext.pathCache.add(name);
+					return name;			
 				}
 				throw new RuntimeException("could not create more than 999 folder names");
 	}
@@ -179,7 +180,7 @@ public class NameServiceImpl implements NameService {
 		for(int i = 1;i < 999;i++)
 		{
 			String name = String.format("part%03d%s", i,ext);
-			String fullname = mesgContext.mesgPath + "/" + name;
+			String fullname = mesgContext.mesgPath() + "/" + name;
 			
 			if(mesgContext.pathCache.contains(fullname)) continue;
 			mesgContext.pathCache.add(fullname);

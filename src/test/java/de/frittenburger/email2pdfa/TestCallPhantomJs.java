@@ -31,19 +31,27 @@ import de.frittenburger.email2pdfa.impl.HtmlEngine;
 
 public class TestCallPhantomJs {
 
-
-	private static String resources = "src/test/resources/data";
-
+	private static String resources = "src/test/resources/content/testmail1/temp";
 	
-	private static String out = SandBoxTestImpl.getTestPath(TestCallPhantomJs.class);
+	private static String out = SandboxTestImpl.getTestPath(TestCallPhantomJs.class);
 	
 	@Test
 	public void test() throws IOException, InterruptedException {
 
 		HtmlEngine htmlEngine = new HtmlEngine();
-		htmlEngine.createScreenShot(resources + "/test.html",out + "/screen.jpg");
-		htmlEngine.createScreenShot(resources + "/test.html",out + "/screen.png");
+		htmlEngine.createScreenShot(resources + "/tempname.html",out + "/screen.jpg");
+		htmlEngine.createScreenShot(resources + "/tempname.html",out + "/screen.png");
 	
 	}
 
+	
+	@Test
+	public void testIndividual() throws IOException, InterruptedException {
+
+		HtmlEngine htmlEngine = new HtmlEngine();
+		
+		String htmlFile = "Z://Stuff/devel/workspaceWindows8.1/email2pdfa/sandbox/content/marketing@ryanairemail.de_20161231_1244_e3c838/temp/fcd247cf-53cf-49ce-b771-87487b9b49ec.html";
+		htmlEngine.createScreenShot(htmlFile,out + "/screenIndividual.png");
+	
+	}
 }

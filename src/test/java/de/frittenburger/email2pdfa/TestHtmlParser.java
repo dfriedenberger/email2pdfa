@@ -24,6 +24,11 @@ package de.frittenburger.email2pdfa;
  */
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import org.junit.Assert;
 import org.junit.Test;
 
 import de.frittenburger.email2pdfa.impl.HtmlParser;
@@ -32,15 +37,19 @@ import de.frittenburger.email2pdfa.impl.HtmlParser;
 public class TestHtmlParser {
 
 	
-	private static String resources = "src/test/resources/data/testmail2";
-	private static String out = SandBoxTestImpl.getTestPath(TestHtmlParser.class);
+	private static String resources = "src/test/resources/messages/testmail2";
+	private static String out = SandboxTestImpl.getTestPath(TestHtmlParser.class);
 	
 	@Test
 	public void test() throws IOException {
 		
 		HtmlParser htmlParser = new HtmlParser();
-		htmlParser.replaceContentIds(resources + "/alternative/test.html",out + "/test.html");
+		Map<String,String> files = new HashMap<String,String>();
+		files.put("xxxx","abcdef.png");
 		
+		Set<String> inline = htmlParser.replaceContentIds(resources + "/alternative/test.html",out + "/test.html", resources , files);
+		Assert.assertEquals(0, inline.size());	
+
 	}
 	
 }

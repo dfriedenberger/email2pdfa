@@ -25,6 +25,8 @@ package de.frittenburger.email2pdfa.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.ProcessBuilder.Redirect;
+import java.util.concurrent.TimeUnit;
 
 public class HtmlEngine {
 
@@ -40,8 +42,17 @@ public class HtmlEngine {
 		System.out.println("Path "+path);
 		System.out.println("Image "+imageFile);
 
-		Process process = new ProcessBuilder("phantomjs/phantomjs.exe","phantomjs/mkScreenshot.js",path  ,imageFile).start();
-		process.waitFor();
+		
+		ProcessBuilder processBuilder = new ProcessBuilder("phantomjs/phantomjs.exe","phantomjs/mkScreenshot.js", path  ,imageFile);
+		processBuilder.redirectOutput(Redirect.INHERIT);
+		processBuilder.redirectError(Redirect.INHERIT);
+		Process process = processBuilder.start();
+		if(!process.waitFor(60, TimeUnit.SECONDS))
+		{
+			System.err.println("Timeout");
+			process.destroy();
+		}
+		
 		
 	}
 

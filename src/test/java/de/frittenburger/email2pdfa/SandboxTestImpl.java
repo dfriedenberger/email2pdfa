@@ -29,29 +29,29 @@ import java.io.IOException;
 
 import de.frittenburger.email2pdfa.interfaces.Sandbox;
 
-public class SandBoxTestImpl implements Sandbox {
+public class SandboxTestImpl implements Sandbox {
 
 	private String messagePath;
 	private String inBoxPath;
 	private String contentPath;
 	private String archivPath;
 
-	public SandBoxTestImpl setMessagePath(String messagePath) {
+	public SandboxTestImpl setMessagePath(String messagePath) {
 		this.messagePath = messagePath;
 		return this;
 	}
 
-	public SandBoxTestImpl setInBoxPath(String inBoxPath) {
+	public SandboxTestImpl setInBoxPath(String inBoxPath) {
 		this.inBoxPath = inBoxPath;
 		return this;
 	}
 
-	public SandBoxTestImpl setContentPath(String contentPath) {
+	public SandboxTestImpl setContentPath(String contentPath) {
 		this.contentPath = contentPath;
 		return this;
 	}
 
-	public SandBoxTestImpl setArchivPath(String archivPath) {
+	public SandboxTestImpl setArchivPath(String archivPath) {
 		this.archivPath = archivPath;
 		return this;
 	}

@@ -23,10 +23,14 @@ package de.frittenburger.email2pdfa.interfaces;
  *  This copyright notice MUST APPEAR in all copies of the script!
  */
 
+import java.io.File;
+
 import de.frittenburger.email2pdfa.bo.MimeMessageParserException;
 
 public interface MimeMessageParser {
 
+	String getTargetDir(String emlFile, Sandbox sandbox) throws MimeMessageParserException;
+	
 	void parse(String emlFile, Sandbox sandbox) throws MimeMessageParserException;
 
 }

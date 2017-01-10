@@ -25,8 +25,10 @@ package de.frittenburger.email2pdfa.interfaces;
 
 import java.io.IOException;
 
-public interface ContentConverter {
 
+public interface ContentConverter {
+	
+	String getTargetDir(String path, Sandbox sandbox);
 	void convert(String path, Sandbox sandbox) throws IOException;
 
 }

@@ -27,6 +27,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
@@ -34,13 +36,18 @@ import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.Security;
 import java.security.cert.Certificate;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.barcodes.BarcodeQRCode;
 import com.itextpdf.io.image.ImageDataFactory;
@@ -84,37 +91,43 @@ import de.frittenburger.email2pdfa.interfaces.Sandbox;
 
 public class PDFACreatorImpl implements PDFACreator {
 
-	private static final String AttachmentTypeUnknown = "unknown";
-	private static final String AttachmentTypeImage = "image";
-	private static final String AttachmentTypeScreen = "screen";
+	private static String INTENT = "src/main/resources/color/sRGB_CS_profile.icm";
+	private static String FONT = "src/main/resources/font/FreeSans.ttf";
+		
+	
+	@Override
+	public String getTargetPdf(String messagePath, Sandbox sandbox) throws IOException {
+		
+		ObjectMapper mapper = new ObjectMapper();
+		EmailHeader header = mapper.readValue(new File(messagePath + "/emailheader.json"), EmailHeader.class);
 
+		
+		String targetPath = getTargetPath(sandbox,header);
+		return getTargetPdf(targetPath,header);
+		
+	}
+	
+	private String getTargetPdf(String targetPath, EmailHeader header) {
+		return targetPath + "/" + header.mesgkey + ".pdf";
+	}
 
-	public void convert(PdfCreatorSignatureData signatureData, String messagePath, Sandbox sandbox) throws IOException, GeneralSecurityException {
+	private String getTargetPath(Sandbox sandbox, EmailHeader header) {
+		return sandbox.getArchivPath() + "/" + header.senderkey;
+	}
+
+	public void convert(String messagePath, Sandbox sandbox) throws IOException {
 
 		ObjectMapper mapper = new ObjectMapper();
 		EmailHeader header = mapper.readValue(new File(messagePath + "/emailheader.json"), EmailHeader.class);
 
-		Map<String,List<String>> files = new HashMap<String,List<String>>();
-		resolveFiles(new File(messagePath), files);
-
-		String path = sandbox.getArchivPath() + "/" + header.senderkey;
-
+	
+		String path = getTargetPath(sandbox,header);
 		new File(path).mkdir();
-
-		String INTENT = "src/main/resources/color/sRGB_CS_profile.icm";
-		String FONT = "src/main/resources/font/FreeSans.ttf";
-
-		String dest = path + "/" + header.mesgkey + ".pdf";
-		String dest_signed = path + "/" + header.mesgkey + "_signed.pdf";
-
-		if (new File(dest).exists())
-			return; // Auf Datei pruefen, da im Folder mehrere Emails liegen
-
 		
+		String dest = getTargetPdf(path,header);
+	
 		
 		PdfWriter writer = new PdfWriter(dest);
-		
-		
 		PdfADocument pdf = new PdfADocument(writer, PdfAConformanceLevel.PDF_A_3A, new PdfOutputIntent(
 				"Custom", "", "http://www.color.org", "sRGB IEC61966-2.1", new FileInputStream(INTENT)));
 
@@ -125,25 +138,72 @@ public class PDFACreatorImpl implements PDFACreator {
 		PdfDocumentInfo info = pdf.getDocumentInfo();
 		info.setTitle(header.subject);
 
-		// Add attachment
-
-		// addAttachment(pdf,"database.csv");
-
-		PdfFont font = PdfFontFactory.createFont(FONT, true);
-
+		
+		
+		//Create Document
 		Document document = new Document(pdf, PageSize.A4);
 		document.setMargins(20, 20, 20, 20);
+		
+		//header
+		addTitle(document,header);
+		addQRCode(pdf,document,header.mesgkey);
+		
+		
+		//Add Content
+		String contents[] = new File(messagePath + "/content").list();
+		Arrays.sort(contents);
+		for(String content : contents)
+		{
+			if(content.endsWith(".png"))
+			{
+				addImageContent(pdf,document,messagePath + "/content/" + content);
+				continue;
+			}
+			
+			if(content.endsWith(".txt"))
+			{
+				addTextContent(document,messagePath + "/content/" + content);
+				continue;
+			}
+			throw new RuntimeException("not implemented content "+content);
+		}
+		
+		//Add Attachments 
+		addAttachment(pdf, "emailheader.json" , "application/json", messagePath + "/emailheader.json");
+		for(String attachment : new File(messagePath + "/attachments").list())
+		{
+			addAttachment(pdf, attachment, "application/octet-stream" , messagePath + "/attachments/" + attachment);
+		}
+		
 
+
+		// Close document
+		document.close();
+	}
+
+
+
+
+	private void addTitle(Document document,EmailHeader header) throws IOException {
+		
+		PdfFont font = PdfFontFactory.createFont(FONT, true);
 		Paragraph p1 = new Paragraph();
-		p1.add(new Text("23").setFont(font).setFontSize(12));
-		p1.add(new Text("000").setFont(font).setFontSize(6));
+		p1.add(new Text(header.subject).setFont(font).setFontSize(12));
+		Paragraph p2 = new Paragraph();
+		p2.add(new Text(header.from[0].address).setFont(font).setFontSize(6));
+		Paragraph p3 = new Paragraph();
+		p3.add(new Text(header.date[0]).setFont(font).setFontSize(6));
+		
 		document.add(p1);
+		document.add(p2);
+		document.add(p3);
 
-		
-		
+	}
+
+	private void addQRCode(PdfADocument pdf, Document document, String code) {
 		//CreateQRCodeImage
 		BarcodeQRCode barcode = new BarcodeQRCode();
-		barcode.setCode(header.mesgkey);
+		barcode.setCode(code);
 
 		Rectangle barCodeRect = barcode.getBarcodeSize();
 		PdfFormXObject template = new PdfFormXObject(
@@ -152,132 +212,86 @@ public class PDFACreatorImpl implements PDFACreator {
 		barcode.placeBarcode(templateCanvas, Color.BLACK, 3);
 		Image image = new Image(template);
 		document.add(image);
-
-		// Embed fonts
-
-		// Add ScreenShots
-		List<String> images = files.get(AttachmentTypeScreen);
-		if(image != null)
-			for (String imgFile : images) {
-				
-				Rectangle rect = pdf.getFirstPage().getPageSize();
-				
-				Image img = new Image(ImageDataFactory.create(imgFile));
-				float imgWidth = img.getImageWidth();
-				float imgHeight = img.getImageHeight();
-				float offsetx = 0;
-				
-				if(imgWidth < rect.getWidth())
-				{
-					offsetx = (rect.getWidth() - imgWidth) / 2;
-				}
-				else
-				{
-					imgHeight *= rect.getWidth() / imgWidth;
-					imgWidth = rect.getWidth();
-				}
-				
-				int parts =  (int) (imgHeight / rect.getHeight());
-				
-				for(int i = 1;i <= parts + 1;i++)
-				{
-					float yoffset = -1 * imgHeight + i * rect.getHeight();
-					document.add(new AreaBreak());
-					img.scaleToFit(imgWidth, imgHeight);
-					img.setFixedPosition(offsetx, yoffset);
-					document.add(img);
-				}
-			}
-
-		// Close document
-		document.close();
-
-		
-		signDocument(signatureData,dest,dest_signed);
-	
-	}
-
-	private void signDocument(PdfCreatorSignatureData signatureData, String src, String dest) throws GeneralSecurityException, IOException {
-		
-        BouncyCastleProvider provider = new BouncyCastleProvider();
-        Security.addProvider(provider);
-        
-        KeyStore ks = KeyStore.getInstance("pkcs12", provider.getName());
-        ks.load(new FileInputStream(signatureData.keyStorePath), signatureData.keyStorePassword.toCharArray());
-        String alias = ks.aliases().nextElement();
-        System.out.println("alias = "+alias);
-        PrivateKey pk = (PrivateKey) ks.getKey(alias, signatureData.privateKeyPassword.toCharArray());
-        Certificate[] chain = ks.getCertificateChain(alias);
-        
-        String digestAlgorithm = DigestAlgorithms.SHA256;
-        String providerName = provider.getName();
-        PdfSigner.CryptoStandard subfilter = PdfSigner.CryptoStandard.CMS;
-        
-		// Creating the reader and the signer
-        PdfReader reader = new PdfReader(src);
-        PdfSigner signer = new PdfSigner(reader, new FileOutputStream(dest), false);
-        // Creating the appearance
-        PdfSignatureAppearance appearance = signer.getSignatureAppearance()
-                .setReason(signatureData.reason)
-                .setLocation(signatureData.location)
-                .setReuseAppearance(false);
-        Rectangle rect = new Rectangle(36, 648, 200, 100);
-        appearance
-                .setPageRect(rect)
-                .setPageNumber(1);
-        signer.setFieldName("sig");
-        // Creating the signature
-        IExternalSignature pks = new PrivateKeySignature(pk, digestAlgorithm, providerName);
-        IExternalDigest digest = new BouncyCastleDigest();
-        signer.signDetached(digest, pks, chain, null, null, null, 0, subfilter);
 		
 	}
 
-	private void resolveFiles(File path, Map<String, List<String>> files) {
-	
-		for (File f : path.listFiles()) {
-			if (f.isDirectory())
-				resolveFiles(f, files);
-			else
-			{
-				/* Dateien Typisieren */
-				String key = AttachmentTypeUnknown;
-				if( f.getName().endsWith(".png") 
-						|| f.getName().endsWith(".jpg")
-						|| f.getName().endsWith(".gif"))
-				{
-					key = AttachmentTypeImage;
-					if(f.getName().startsWith("screen_")) //TODO Defines
-						key = AttachmentTypeScreen;
-				}
-				
-				if(!files.containsKey(key))
-					files.put(key, new ArrayList<String>());
-			
-				files.get(key).add(f.getPath());
-			
-			}
 
+	private void addTextContent(Document document, String txtFile) throws IOException {
+		
+		PdfFont font = PdfFontFactory.createFont(FONT, true);
+	
+	
+		document.add(new AreaBreak());
+
+		
+		for(String line : Files.readAllLines(Paths.get(txtFile),StandardCharsets.UTF_8))
+		{
+			Paragraph p1 = new Paragraph();
+			p1.add(new Text(line).setFont(font).setFontSize(6));
+			document.add(p1);
 		}
-
 		
 	}
 
 
 
-	private void addAttachment(PdfADocument pdf, String filename) throws IOException {
+	private void addImageContent(PdfADocument pdf, Document document, String imgFile) throws MalformedURLException {
+		Rectangle rect = pdf.getFirstPage().getPageSize();
+		
+		Image img = new Image(ImageDataFactory.create(imgFile));
+		float imgWidth = img.getImageWidth();
+		float imgHeight = img.getImageHeight();
+		float offsetx = 0;
+		
+		if(imgWidth < rect.getWidth())
+		{
+			offsetx = (rect.getWidth() - imgWidth) / 2;
+		}
+		else
+		{
+			imgHeight *= rect.getWidth() / imgWidth;
+			imgWidth = rect.getWidth();
+		}
+		
+		int parts =  (int) (imgHeight / rect.getHeight());
+		
+		for(int i = 1;i <= parts + 1;i++)
+		{
+			float yoffset = -1 * imgHeight + i * rect.getHeight();
+			document.add(new AreaBreak());
+			img.scaleToFit(imgWidth, imgHeight);
+			img.setFixedPosition(offsetx, yoffset);
+			document.add(img);
+		}
+		
+	}
+
+
+
+	private void addAttachment(PdfADocument pdf, String name,String mimetype,String path) throws IOException {
+		
 		PdfDictionary parameters = new PdfDictionary();
 		parameters.put(PdfName.ModDate, new PdfDate().getPdfObject());
-		PdfFileSpec fileSpec = PdfFileSpec.createEmbeddedFileSpec(pdf, Files.readAllBytes(Paths.get(filename)),
-				"database.csv", "database.csv", new PdfName("text/csv"), parameters, PdfName.Data, false);
+		
+		byte[] bytes = Files.readAllBytes(Paths.get(path));
+		
+		String description = name;
+		String fileDisplay = name;
+		
+		PdfFileSpec fileSpec = PdfFileSpec.createEmbeddedFileSpec(pdf, bytes, description, fileDisplay , new PdfName(mimetype), parameters, PdfName.Data, false);
 		fileSpec.put(new PdfName("AFRelationship"), new PdfName("Data"));
-		pdf.addFileAttachment("database.csv", fileSpec);
+		pdf.addFileAttachment(description, fileSpec);
 
 		PdfArray array = new PdfArray();
 		array.add(fileSpec.getPdfObject().getIndirectReference());
 		pdf.getCatalog().put(new PdfName("AF"), array);
 
 	}
+
+
+
+
+
 
 	
 }

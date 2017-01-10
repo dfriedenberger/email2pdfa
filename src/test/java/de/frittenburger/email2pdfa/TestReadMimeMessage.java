@@ -23,22 +23,32 @@ package de.frittenburger.email2pdfa;
  *  This copyright notice MUST APPEAR in all copies of the script!
  */
 
+import java.io.File;
+
+import org.junit.Assert;
 import org.junit.Test;
 
 import de.frittenburger.email2pdfa.bo.MimeMessageParserException;
 import de.frittenburger.email2pdfa.impl.MimeMessageParserImpl;
 import de.frittenburger.email2pdfa.interfaces.MimeMessageParser;
+import de.frittenburger.email2pdfa.interfaces.Sandbox;
 
 public class TestReadMimeMessage {
 
-	private static String resources = "src/test/resources/mail";
-	private static String out = SandBoxTestImpl.getTestPath(TestReadMimeMessage.class);
+	private static String resources = "src/test/resources/in";
+	private static String out = SandboxTestImpl.getTestPath(TestReadMimeMessage.class);
 	
 	@Test
 	public void testSimpleHtmlEmail() throws MimeMessageParserException {
 
 		MimeMessageParser mimeMessageParser = new MimeMessageParserImpl();
-		mimeMessageParser.parse(resources + "/SimpleHtml.eml", new SandBoxTestImpl().setMessagePath(out));
+		String emlFile = resources + "/SimpleHtml.eml";
+		
+		Sandbox sandbox = new SandboxTestImpl().setMessagePath(out);
+		
+		String file = mimeMessageParser.getTargetDir(emlFile, sandbox);
+		Assert.assertFalse(file + " not exists", new File(file).exists());
+		mimeMessageParser.parse(emlFile, sandbox);
 
 	}
 
@@ -47,7 +57,7 @@ public class TestReadMimeMessage {
 	public void testFileNotExists() throws MimeMessageParserException {
 
 		MimeMessageParser mimeMessageParser = new MimeMessageParserImpl();
-		mimeMessageParser.parse(resources + "/FileNotExists", new SandBoxTestImpl().setMessagePath(out));
+		mimeMessageParser.parse(resources + "/FileNotExists", new SandboxTestImpl().setMessagePath(out));
 		
 	}
 	
@@ -55,7 +65,20 @@ public class TestReadMimeMessage {
 	public void testEmptyFile() throws MimeMessageParserException {
 
 		MimeMessageParser mimeMessageParser = new MimeMessageParserImpl();
-		mimeMessageParser.parse(resources + "/EmptyFile.eml", new SandBoxTestImpl().setMessagePath(out));
+		mimeMessageParser.parse(resources + "/EmptyFile.eml", new SandboxTestImpl().setMessagePath(out));
 
 	}
+	
+	
+	/*
+	private static String individualMessageForParsing = "sandbox\\in\\" + " file .eml";
+	@Test
+	public void testIndividual() throws MimeMessageParserException {
+		
+		MimeMessageParser mimeMessageParser = new MimeMessageParserImpl();
+		mimeMessageParser.parse(individualMessageForParsing, new SandboxTestImpl().setMessagePath(out));
+
+	}
+	*/
+	
 }

@@ -23,31 +23,28 @@ package de.frittenburger.email2pdfa;
  *  This copyright notice MUST APPEAR in all copies of the script!
  */
 
+import org.junit.Assert;
 import org.junit.Test;
+
+import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 
-import de.frittenburger.email2pdfa.bo.PdfCreatorSignatureData;
 import de.frittenburger.email2pdfa.impl.PDFACreatorImpl;
 import de.frittenburger.email2pdfa.interfaces.PDFACreator;
 
 public class TestCreatePdf {
 
-	private static String out = SandBoxTestImpl.getTestPath(TestCreatePdf.class);
+	private static String out = SandboxTestImpl.getTestPath(TestCreatePdf.class);
 
 	@Test
 	public void test() throws IOException, GeneralSecurityException {
 			
 			PDFACreator pdfCreator = new PDFACreatorImpl();
-			PdfCreatorSignatureData pdfCreatorSignatureData = new PdfCreatorSignatureData();
-
-			pdfCreatorSignatureData.keyStorePath = "src/test/resources/keystores/demo-rsa.p12";
-			pdfCreatorSignatureData.keyStorePassword = "demo";
-			pdfCreatorSignatureData.privateKeyPassword = "";
-			pdfCreatorSignatureData.location = "irgendwo";
-			pdfCreatorSignatureData.reason = "deshalb";
 			
-			pdfCreator.convert(pdfCreatorSignatureData,"src/test/resources/data/testmail1", new SandBoxTestImpl().setArchivPath(out));
+			pdfCreator.convert("src/test/resources/content/testmail1", new SandboxTestImpl().setArchivPath(out));
+			
+			Assert.assertTrue("email@example.org/testmessagekey.pdf exists",new File(out + "/email@example.org/testmessagekey.pdf").exists());
 			
 	}
 
