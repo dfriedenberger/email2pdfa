@@ -42,7 +42,7 @@ public class TestCreatePdf {
 			
 			PDFACreator pdfCreator = new PDFACreatorImpl();
 			
-			pdfCreator.convert("src/test/resources/content/testmail1", new SandboxTestImpl().setArchivPath(out));
+			pdfCreator.convert("src/test/resources/content/testmail1", new SandboxTestImpl().setPdfPath(out));
 			
 			Assert.assertTrue("email@example.org/testmessagekey.pdf exists",new File(out + "/email@example.org/testmessagekey.pdf").exists());
 			

@@ -10,9 +10,7 @@ import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.Security;
 import java.security.cert.Certificate;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -39,20 +37,21 @@ public class PDFASignerImpl implements PDFASigner {
 		
 		Map<String,String> sourceFiles = new HashMap<String,String>();
 		
-		String path = sandbox.getArchivPath() + "/" + senderkey;
-		
-		String[] files = new File(path).list(new FilenameFilter() {
+		String srcPath = sandbox.getPdfPath() + "/" + senderkey;
+		String destPath = sandbox.getArchivPath() + "/" + senderkey;
+
+		String[] files = new File(srcPath).list(new FilenameFilter() {
 			@Override
 			public boolean accept(File dir, String name) {
-				return name.endsWith(".pdf") && !name.endsWith("signed.pdf");
+				return name.endsWith(".pdf");
 			}});
 		
 		
 		for(String file : files)
 		{
 			String fileNamePart = file.substring(0,file.length() - 4);
-			String src = path + "/" + file;
-			String dest = path + "/" + fileNamePart + "_signed.pdf";
+			String src = srcPath + "/" + file;
+			String dest = destPath + "/" + fileNamePart + "_signed.pdf";
 			
 			if(new File(dest).exists())
 				continue;
@@ -69,6 +68,10 @@ public class PDFASignerImpl implements PDFASigner {
 		
 		
 		Map<String,String> files = getUnsignedPdfs(senderkey,sandbox);
+		File destPath = new File(sandbox.getArchivPath() + "/" + senderkey);
+
+		if(!destPath.exists())
+			destPath.mkdir();
 		
 		for(String src : files.keySet())
 		{
@@ -85,7 +88,7 @@ public class PDFASignerImpl implements PDFASigner {
         KeyStore ks = KeyStore.getInstance("pkcs12", provider.getName());
         ks.load(new FileInputStream(signatureData.keyStorePath), signatureData.keyStorePassword.toCharArray());
         String alias = ks.aliases().nextElement();
-        System.out.println("alias = "+alias);
+        //System.out.println("alias = "+alias);
         PrivateKey pk = (PrivateKey) ks.getKey(alias, signatureData.privateKeyPassword.toCharArray());
         Certificate[] chain = ks.getCertificateChain(alias);
         
@@ -101,6 +104,7 @@ public class PDFASignerImpl implements PDFASigner {
                 .setReason(signatureData.reason)
                 .setLocation(signatureData.location)
                 .setReuseAppearance(false);
+        
         Rectangle rect = new Rectangle(36, 648, 200, 100);
         appearance
                 .setPageRect(rect)

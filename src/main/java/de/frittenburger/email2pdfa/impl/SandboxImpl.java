@@ -29,31 +29,41 @@ import de.frittenburger.email2pdfa.interfaces.Sandbox;
 
 public class SandboxImpl implements Sandbox {
 
-	public String getInBoxPath() {
-		return "sandbox/in";
-	}
+	private String path;
 
-	public String getMessagePath() {
-		return "sandbox/messages";
-	}
-
-	public String getArchivPath() {
-		return "sandbox/archiv";
-	}
-	
-	public String getContentPath() {
-		//return "sandbox/messages";
-		return "sandbox/content";
-	}
-	
-	public void init() {
+	public SandboxImpl(String path) {
+		this.path = path;
+		if(!new File(path).exists())
+			throw new RuntimeException(" Path " + path + " not exists, must be created manually");
+		
+		//init
 		new File(getInBoxPath()).mkdir();
 		new File(getMessagePath()).mkdir();	
 		new File(getContentPath()).mkdir();		
+		new File(getPdfPath()).mkdir();		
 		new File(getArchivPath()).mkdir();		
 	}
 
+	public String getInBoxPath() {
+		return path + "/in";
+	}
+
+	public String getMessagePath() {
+		return path + "/messages";
+	}
+
+	public String getArchivPath() {
+		return path + "/archiv";
+	}
+	
+	public String getContentPath() {
+		return path + "/content";
+	}
+
+	@Override
+	public String getPdfPath() {
+		return path + "/pdfs";
+	}
 	
 
-	
 }

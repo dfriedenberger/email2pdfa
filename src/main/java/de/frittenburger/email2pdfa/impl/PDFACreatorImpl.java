@@ -25,29 +25,13 @@ package de.frittenburger.email2pdfa.impl;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.GeneralSecurityException;
-import java.security.KeyStore;
-import java.security.PrivateKey;
-import java.security.Security;
-import java.security.cert.Certificate;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.barcodes.BarcodeQRCode;
 import com.itextpdf.io.image.ImageDataFactory;
@@ -63,7 +47,6 @@ import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocumentInfo;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfOutputIntent;
-import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.PdfViewerPreferences;
 import com.itextpdf.kernel.pdf.PdfWriter;
@@ -71,21 +54,14 @@ import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.filespec.PdfFileSpec;
 import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
 import com.itextpdf.layout.Document;
+import com.itextpdf.layout.border.SolidBorder;
 import com.itextpdf.layout.element.AreaBreak;
 import com.itextpdf.layout.element.Image;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Text;
 import com.itextpdf.pdfa.PdfADocument;
-import com.itextpdf.signatures.BouncyCastleDigest;
-import com.itextpdf.signatures.DigestAlgorithms;
-import com.itextpdf.signatures.IExternalDigest;
-import com.itextpdf.signatures.IExternalSignature;
-import com.itextpdf.signatures.PdfSignatureAppearance;
-import com.itextpdf.signatures.PdfSigner;
-import com.itextpdf.signatures.PrivateKeySignature;
 
 import de.frittenburger.email2pdfa.bo.EmailHeader;
-import de.frittenburger.email2pdfa.bo.PdfCreatorSignatureData;
 import de.frittenburger.email2pdfa.interfaces.PDFACreator;
 import de.frittenburger.email2pdfa.interfaces.Sandbox;
 
@@ -112,7 +88,7 @@ public class PDFACreatorImpl implements PDFACreator {
 	}
 
 	private String getTargetPath(Sandbox sandbox, EmailHeader header) {
-		return sandbox.getArchivPath() + "/" + header.senderkey;
+		return sandbox.getPdfPath() + "/" + header.senderkey;
 	}
 
 	public void convert(String messagePath, Sandbox sandbox) throws IOException {
@@ -211,8 +187,8 @@ public class PDFACreatorImpl implements PDFACreator {
 		PdfCanvas templateCanvas = new PdfCanvas(template, pdf);
 		barcode.placeBarcode(templateCanvas, Color.BLACK, 3);
 		Image image = new Image(template);
+		image.setBorder(new SolidBorder(1));
 		document.add(image);
-		
 	}
 
 

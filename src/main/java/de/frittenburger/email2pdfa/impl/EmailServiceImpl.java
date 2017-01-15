@@ -23,26 +23,33 @@ package de.frittenburger.email2pdfa.impl;
  *  This copyright notice MUST APPEAR in all copies of the script!
  */
 
-import java.io.File;
 import java.util.List;
 
 import de.frittenburger.email2pdfa.bo.EmailServiceAccountData;
+import de.frittenburger.email2pdfa.interfaces.EmailCache;
 import de.frittenburger.email2pdfa.interfaces.EmailService;
 import de.frittenburger.email2pdfa.interfaces.Sandbox;
 
 public class EmailServiceImpl implements EmailService {
 
 	private int rangefrom = -1;
+	private final EmailCache emailCache;
 	private static int RANGE = 10;
 
-	public void getMessages(EmailServiceAccountData emailServiceAccountData, Sandbox sandbox) {
+	public EmailServiceImpl(EmailCache emailCache) {
+		this.emailCache = emailCache;
+	}
+
+	public int getMessages(EmailServiceAccountData emailServiceAccountData, Sandbox sandbox) {
 
 		EmailBoxReader reader = new EmailBoxReader(emailServiceAccountData);
 
 		if (rangefrom == 1)
-			return; // ready
+			return 0; // ready
 
 		try {
+			
+			int readMessages = 0;
 
 			reader.open();
 
@@ -63,17 +70,25 @@ public class EmailServiceImpl implements EmailService {
 
 			List<String> msglst = reader.list(rangefrom, rangeto);
 
+			
+			
 			for (String msgid : msglst) {
+			
+				if(emailCache.exists(msgid)) continue;
 				String path = sandbox.getInBoxPath() + "/"+msgid+".eml";
-				if(new File(path).exists()) continue;
+			
+				emailCache.add(msgid,msgid+".eml");
+				
 				reader.read(msgid,path);
+				readMessages++;
 			}
 
 			reader.close();
-
+			
+			return readMessages;
 		} catch (Exception e) {
 			e.printStackTrace();
-			return;
+			return -1;
 		}
 
 	}

@@ -23,17 +23,23 @@ package de.frittenburger.email2pdfa.impl;
  *  This copyright notice MUST APPEAR in all copies of the script!
  */
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import javax.mail.BodyPart;
@@ -49,48 +55,64 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.frittenburger.email2pdfa.bo.EmailHeader;
 import de.frittenburger.email2pdfa.bo.MessageContext;
 import de.frittenburger.email2pdfa.bo.MimeMessageParserException;
+import de.frittenburger.email2pdfa.bo.SignatureInfo;
+import de.frittenburger.email2pdfa.interfaces.EmailCache;
 import de.frittenburger.email2pdfa.interfaces.MimeMessageParser;
 import de.frittenburger.email2pdfa.interfaces.NameService;
 import de.frittenburger.email2pdfa.interfaces.Sandbox;
+import de.frittenburger.email2pdfa.interfaces.SignatureEngine;
 
 public class MimeMessageParserImpl implements MimeMessageParser {
 
-	private NameService nameService = new NameServiceImpl();
+	private final NameService nameService = new NameServiceImpl();
+	private final SignatureEngine signaturEngine = new SignatureEngineImpl();
+	private final EmailCache emailCache;
 
+	private static final String emailheaderfile = "header.txt";
 	private static final String emailheaderjsonfile = "emailheader.json";
+	private static final String signaturejsonfile = "signature.json";
 	private static final String mappingjsonfile = "mapping.json";
 	private static final String orderjsonfile = "order.json";
+	private static final String encodingjsonfile = "encoding.json";
+
+	public MimeMessageParserImpl(EmailCache emailCache) {
+		this.emailCache = emailCache;
+	}
+
+
 
 	@Override
 	public String getTargetDir(String emlFile, Sandbox sandbox) throws MimeMessageParserException {
 		
 		try
 		{
-			MimeMessage mime = readMime(emlFile);
-			
-			EmailHeader header = nameService.getEmailHeader(mime);
-	
-			return getRootPath(sandbox,header);
+			String messageKey = emailCache.getMesgKey(new File(emlFile).getName());
+
+			if(messageKey == null)
+			{
+				System.err.println("No Messagekey found for "+emlFile);
+				MimeMessage mime = readMime(emlFile);
+				EmailHeader header = nameService.getEmailHeader(mime);
+				messageKey = header.mesgkey;
+			}
+		
+			return getRootPath(sandbox,messageKey);
 		
 		} catch (IOException e) {
-			e.printStackTrace();
 			throw new MimeMessageParserException(e);
 		} catch (MessagingException e) {
-			e.printStackTrace();
 			throw new MimeMessageParserException(e);
 		} catch (GeneralSecurityException e) {
-			e.printStackTrace();
 			throw new MimeMessageParserException(e);
 		} catch (ParseException e) {
-			e.printStackTrace();
 			throw new MimeMessageParserException(e);
 		}
 	}
 	
 
 
-	private String getRootPath(Sandbox sandbox, EmailHeader header) {
-		return sandbox.getMessagePath() + "/" + header.mesgkey;
+	private String getRootPath(Sandbox sandbox, String messageKey) {
+		return sandbox.getMessagePath() + "/" + messageKey;
 	}
 
 
@@ -99,35 +121,48 @@ public class MimeMessageParserImpl implements MimeMessageParser {
 	public void parse(String emlFile, Sandbox sandbox) throws MimeMessageParserException {
 
 		
-		System.out.println("read "+emlFile);
+		println("read "+emlFile);
 		try {
 			
+			List<String> rawheader = readHeader(emlFile);
 			MimeMessage mime = readMime(emlFile);
-
+			
+			validateMime(mime,emlFile);
+			
 			EmailHeader header = nameService.getEmailHeader(mime);
+			SignatureInfo signatureInfo = signaturEngine.check(mime);
+
+			
 			MessageContext messageContext = new MessageContext();
-			messageContext.rootPath = getRootPath(sandbox,header);
+			messageContext.rootPath = getRootPath(sandbox,header.mesgkey);
 			
 			//Create Path
 			File mesgDirectory = new File(messageContext.rootPath);
-			
 			if(!mesgDirectory.exists())
 			{
 				mesgDirectory.mkdir();
 			}
 
+			//Create headers.txt
+			writeHeader(messageContext.rootPath + "/" + emailheaderfile,rawheader);
+			
+			
 			//Create emailheader.json
 			ObjectMapper mapper = new ObjectMapper();
 			mapper.writerWithDefaultPrettyPrinter().writeValue(new File(messageContext.rootPath + "/" + emailheaderjsonfile),
 					header);
 
+			//Create signature.json
+			if(signatureInfo.hasSignature)
+			{
+				mapper.writerWithDefaultPrettyPrinter().writeValue(new File(messageContext.rootPath + "/" + signaturejsonfile),
+						signatureInfo);
+			}
 			//Parse content
 			messageContext.encoding = mime.getEncoding();
 			messageContext.contentFilename = null;
 			messageContext.contentId = null;
-			
-			
-
+						
 			parseContent(messageContext, mime.getContent(), mime.getContentType(), mime.getDisposition());
 			
 			//Create order.json
@@ -139,6 +174,13 @@ public class MimeMessageParserImpl implements MimeMessageParser {
 			{
 				mapper.writerWithDefaultPrettyPrinter().writeValue(new File(messageContext.rootPath + "/" + mappingjsonfile),
 						messageContext.contentIdMapping);
+			}
+			
+			//Create encoding.json
+			if(messageContext.contentEncoding.size() > 0)
+			{
+				mapper.writerWithDefaultPrettyPrinter().writeValue(new File(messageContext.rootPath + "/" + encodingjsonfile),
+						messageContext.contentEncoding);
 			}
 			
 		} catch (FileNotFoundException e) {
@@ -160,6 +202,52 @@ public class MimeMessageParserImpl implements MimeMessageParser {
 
 	}
 
+	private void println(Object obj) {
+		//Ignore
+	}
+
+
+
+	private void writeHeader(String filename, List<String> lines) throws IOException {
+
+		BufferedWriter bw = null;
+		try {
+			bw = new BufferedWriter(new FileWriter(filename));
+
+			for (String line : lines) {
+				bw.write(line);
+				bw.newLine();
+			}
+		} finally {
+			if (bw != null)
+
+				bw.close();
+		}
+	}
+
+
+
+	//Read and parse the given RFC822 message stream till the blank line separating the header from the body.
+	private List<String> readHeader(String emlFile) throws IOException {
+		List<String> lines = new ArrayList<String>();
+		BufferedReader reader = null;
+		try {
+			reader = new BufferedReader(new FileReader(emlFile));
+			String line;
+			while ((line = reader.readLine()) != null) {
+				if (line.trim().equals(""))
+					break;
+				lines.add(line);
+			}
+		} finally {
+			if (reader != null)
+				reader.close();
+		}
+
+		return lines;
+	}
+
+
 	private MimeMessage readMime(String emlFile) throws IOException, MessagingException {
 		Properties props = new Properties();
 		Session session = Session.getDefaultInstance(props, null);
@@ -177,12 +265,42 @@ public class MimeMessageParserImpl implements MimeMessageParser {
 	}
 	
 	
+	private void validateMime(MimeMessage mime,String emlFile) throws IOException, MessagingException {
+
+		
+		String[] transferEncoding = mime.getHeader("Content-Transfer-Encoding");
+		if(transferEncoding != null)
+		{
+			for(String h : transferEncoding)
+			{
+				if(h.trim().equals("")) 
+					throw new IOException("Empty Content-Transfer-Encoding Header in " +  emlFile);
+			}
+		}
+		
+	}
+
+
+
 	private void parseContent(MessageContext mesgContext, Object msgContent, String contentType, String disposition)
 			throws IOException, MessagingException {
 
 		ContentType ct = new ContentType(contentType);
-		System.out.println("disposition " + disposition);
-		System.out.println("Part " + msgContent.getClass() + " type=" + ct.getBaseType());
+		Charset charset = null;
+		try
+		{
+			String charsetStr = ct.getParameter("charset");
+			if(charsetStr != null)
+				charset = Charset.forName(charsetStr);
+		}
+		catch(Exception e)
+		{
+			throw new RuntimeException("Could not convert: " + ct.toString()+ " ex="+ e.getMessage());
+		}
+		
+		println("Part " + msgContent.getClass() + " type=" + ct.getBaseType());
+		println("disposition " + disposition);
+		println("charset " + charset);
 
 		if (msgContent instanceof Multipart) {
 			Multipart multipart = (Multipart) msgContent;
@@ -202,10 +320,13 @@ public class MimeMessageParserImpl implements MimeMessageParser {
 				mesgContext.contentFilename = null;
 				mesgContext.contentId = null;
 
+				
+				
 				// has Filename?
 				String filename = bodyPart.getFileName();
 				if (filename != null) {
-					mesgContext.contentFilename = MimeUtility.decodeText(filename);
+					String decodedFilename = MimeUtility.decodeText(filename);
+					mesgContext.contentFilename = nameService.parseValidFilename(decodedFilename,new ContentType(bodyPart.getContentType()));
 				}
 
 				String[] contentID = bodyPart.getHeader("Content-ID");
@@ -223,34 +344,20 @@ public class MimeMessageParserImpl implements MimeMessageParser {
 
 			if (msgContent instanceof String) {
 				String str = (String) msgContent;
-				Charset charset = StandardCharsets.UTF_8;
 				
-				//set output charset to referenced
-				if(ct.getBaseType().equals("text/html"))
-				{
-					try
-					{
-						String charsetStr = ct.getParameter("charset");
-						if(charsetStr != null)
-							charset = Charset.forName(charsetStr);
-					}
-					catch(Exception e)
-					{
-						throw new RuntimeException("Could not convert: " + ct.toString()+ " ex="+ e.getMessage());
-					}
-				}
+				if(charset == null)
+					charset = StandardCharsets.UTF_8;
 				
-				
-				save(mesgContext, new ByteArrayInputStream(str.getBytes(charset)), ct);
+				save(mesgContext, new ByteArrayInputStream(str.getBytes(charset)), ct, charset);
 			} else if (msgContent instanceof InputStream) {
 				// BASE64DecoderStream
 				// QPDecoderStream
 				// SharedByteArrayInputStream
 				InputStream is = (InputStream) msgContent;
-				save(mesgContext, is, ct);
+				save(mesgContext, is, ct, charset);
 			} else if (msgContent instanceof MimeMessage) {
 				MimeMessage mimeMessage = (MimeMessage) msgContent;
-				save(mesgContext, mimeMessage.getRawInputStream(), new ContentType("message/rfc822"));
+				save(mesgContext, mimeMessage.getRawInputStream(), new ContentType("message/rfc822"), charset);
 			} else {
 				throw new RuntimeException("Not implemented " + msgContent);
 			}
@@ -258,12 +365,12 @@ public class MimeMessageParserImpl implements MimeMessageParser {
 
 	}
 
-	private void save(MessageContext mesgContext, InputStream in, ContentType contentType) throws IOException {
+	private void save(MessageContext mesgContext, InputStream in, ContentType contentType, Charset charset) throws IOException {
 
 		if (mesgContext.contentFilename == null)
 			mesgContext.contentFilename = nameService.getFilename(mesgContext, contentType);
 
-		System.out.println("fileName " + mesgContext.contentFilename);
+		println("fileName " + mesgContext.contentFilename);
 
 		FileOutputStream out = new FileOutputStream(mesgContext.mesgPath() + "/" + mesgContext.contentFilename);
 		byte[] buffer = new byte[1024];
@@ -277,6 +384,9 @@ public class MimeMessageParserImpl implements MimeMessageParser {
 		
 		String relpath = new String(mesgContext.relavtivePath + "/" + mesgContext.contentFilename).substring(1);
 		mesgContext.order.add(relpath);
+		
+		if(charset != null)
+			mesgContext.contentEncoding.put(relpath,charset.name());
 		if(mesgContext.contentId != null)
 		{
 			//create mapping

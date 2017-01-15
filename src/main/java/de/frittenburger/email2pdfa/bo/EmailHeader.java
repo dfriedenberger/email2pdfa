@@ -30,5 +30,6 @@ public class EmailHeader {
 	public String[] date;
 	public EmailHeaderFrom[] from;
 	public String subject;
+	public EmailHeaderFrom[] sender;
 
 }

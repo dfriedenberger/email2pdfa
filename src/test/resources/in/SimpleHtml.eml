@@ -2,7 +2,8 @@ Date: Thu, 07 Jan 2016 10:33:52 +0100
 User-Agent: KuferTools/KuferWEB SMTP Engine 1.10
 Message-ID: <20160107103352.78986500@mail.emsnetz.de>
 To: email@example.org
-From: "Sender" <email@example.org>
+From: "From" <email@example.org>
+Sender: "Sender" <sender@example.org>
 Content-Type: text/html; charset="Windows-1252"; format=flowed
 MIME-Version: 1.0
 Subject: =?Windows-1252?B?SGVsbG8gV29ybGQ=?=

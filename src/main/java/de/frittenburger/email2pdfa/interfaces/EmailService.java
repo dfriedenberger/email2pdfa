@@ -27,6 +27,6 @@ import de.frittenburger.email2pdfa.bo.EmailServiceAccountData;
 
 public interface EmailService {
 
-	void getMessages(EmailServiceAccountData emailServiceAccountData, Sandbox sandbox);
+	int getMessages(EmailServiceAccountData emailServiceAccountData, Sandbox sandbox);
 
 }

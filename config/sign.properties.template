@@ -1,8 +1,0 @@
-
-#configuration for signing
-
-keystorepath = path to p12/pfx keystorefile
-keystorepassword = password for keystorefile
-privatekeypassword = password for privatekey
-location = Irgendwo
-reason = Deshalb

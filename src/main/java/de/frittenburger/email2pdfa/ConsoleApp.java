@@ -23,101 +23,83 @@ package de.frittenburger.email2pdfa;
  *  This copyright notice MUST APPEAR in all copies of the script!
  */
 
+import java.util.List;
 import java.util.Scanner;
 
 import de.frittenburger.email2pdfa.impl.ConfigurationImpl;
 import de.frittenburger.email2pdfa.impl.JobQueueImpl;
-import de.frittenburger.email2pdfa.impl.SandboxImpl;
 import de.frittenburger.email2pdfa.interfaces.Configuration;
 import de.frittenburger.email2pdfa.interfaces.JobQueue;
-import de.frittenburger.email2pdfa.interfaces.Sandbox;
 
 public class ConsoleApp {
 
 	public static void main(String[] args) throws Exception {
 
-		// Create SandBox 
-		Sandbox sandbox = new SandboxImpl();
-		sandbox.init();
-		
-		Configuration config = new ConfigurationImpl("config");
-		System.out.println(config);
+		List<Configuration> configurations = ConfigurationImpl.read("config");
 
-		
-		JobQueue jobqueue = new JobQueueImpl(sandbox,config);
-		
+		for (Configuration config : configurations)
+			System.out.println(config.getName());
 
 		Scanner scanner = new Scanner(System.in);
-		while(true)
-		{
+		System.out.println("Select Config");
+		System.out.print(">");
+		System.out.flush();
+		String confname = scanner.next();
 		
-			jobqueue.resolvePollJobs();
-			jobqueue.resolveParserJobs();
-			jobqueue.resolveConvertJobs();
-			jobqueue.resolveCreateJobs();
-			jobqueue.resolveSignJobs();
-			
-			System.out.println(jobqueue);
-			printHelp();
-			System.out.print(">");
-			System.out.flush();
-		    String command = scanner.next();
-		
-		    if(command.equals("exit"))
-			{
-		    	scanner.close();
-				System.exit(0);
-			}
-		    else if(command.equals("poll"))
-			{
-				//Download emails 
-				jobqueue.runPollJobs();
-			}
-			else if(command.equals("parse"))
-			{
-				jobqueue.runParserJobs();
-			}	
-			else if(command.equals("convert"))
-			{
-				jobqueue.runConvertJobs();
-			}	
-			else if(command.equals("create"))
-			{
-				jobqueue.runCreateJobs();
-			}	
-			else if(command.equals("sign"))
-			{
-				jobqueue.runSignJobs();
+		for (Configuration config : configurations) {
+			if (!config.getName().equals(confname))
+				continue;
 
-			}	
-			else
-			{
-				System.out.println("Unknown Command " + command);
+			JobQueue jobqueue = new JobQueueImpl(config);
+
+			while (true) {
+
+				jobqueue.resolvePollJobs();
+				jobqueue.resolveParserJobs();
+				jobqueue.resolveConvertJobs();
+				jobqueue.resolveCreateJobs();
+				jobqueue.resolveSignJobs();
+
+				System.out.println(jobqueue);
 				printHelp();
-			}
+				System.out.print(">");
+				System.out.flush();
+				String command = scanner.next();
 
-		}	
+				if (command.equals("exit")) {
+					break;
+				} else if (command.equals("poll")) {
+					// Download emails
+					jobqueue.runPollJobs();
+				} else if (command.equals("parse")) {
+					jobqueue.runParserJobs();
+				} else if (command.equals("convert")) {
+					jobqueue.runConvertJobs();
+				} else if (command.equals("create")) {
+					jobqueue.runCreateJobs();
+				} else if (command.equals("sign")) {
+					jobqueue.runSignJobs();
+
+				} else {
+					System.out.println("Unknown Command " + command);
+					printHelp();
+				}
+
+			}
+			
+			scanner.close();
+			System.exit(0);
+		}
 
 	}
-
-	
 
 	private static void printHelp() {
 		System.out.println("use following Arguments");
-		System.out.println("poll [box] - for polling emails");
+		System.out.println("poll - for polling emails");
 		System.out.println("parse - parse and extract emails");
 		System.out.println("convert - create screenshots from html parts");
 		System.out.println("create - create pdf/a files");
-		System.out.println("sign [sign] - sign pdf/a files");
+		System.out.println("sign - sign pdf/a files");
 	}
 
-
-
-	
-
-
-   
-	
-	
-	
 }

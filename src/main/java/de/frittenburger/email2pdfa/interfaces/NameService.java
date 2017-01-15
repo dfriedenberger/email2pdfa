@@ -44,7 +44,10 @@ public interface NameService {
 
 	String getFilename(MessageContext mesgContext, ContentType contentType);
 
-
+	String parseExtension(String filename);
+	
 	EmailHeader getEmailHeader(Message message) throws GeneralSecurityException, MessagingException, ParseException, UnsupportedEncodingException;
+
+	String parseValidFilename(String decodedFilename, ContentType contentType);
 
 }

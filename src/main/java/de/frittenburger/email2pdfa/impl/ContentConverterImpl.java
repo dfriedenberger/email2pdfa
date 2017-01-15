@@ -23,8 +23,14 @@ package de.frittenburger.email2pdfa.impl;
  *  This copyright notice MUST APPEAR in all copies of the script!
  */
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -33,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,7 +50,7 @@ import de.frittenburger.email2pdfa.interfaces.Sandbox;
 public class ContentConverterImpl implements ContentConverter {
 
 	enum TypeOfPart {
-		Attachment,  Content, Ignore
+		Attachment,  Content, Ignore, Signature
 	}
 
 	private File targetPath;
@@ -64,7 +71,7 @@ public class ContentConverterImpl implements ContentConverter {
 		
 		String targetPathStr = getTargetDir(path,sandbox);
 		
-		System.out.println("convert "+path+ " to "+ targetPathStr);
+		println("convert "+path+ " to "+ targetPathStr);
 
 		
 		targetPath = new File(targetPathStr);
@@ -83,7 +90,13 @@ public class ContentConverterImpl implements ContentConverter {
 		if(!emailheader.exists()) 
 			throw new IOException("Missing emailheader.json");
 		
-	
+		//header.txt
+		File txtheader = new File(path + "/header.txt");
+		if(!txtheader.exists()) 
+			throw new IOException("Missing header.txt");
+		
+		//Signature
+		File signatureFile = new File(path + "/signature.json");
 		
 		//Order
 		File orderFile = new File(path + "/order.json");
@@ -99,11 +112,19 @@ public class ContentConverterImpl implements ContentConverter {
 		if(mappingFile.exists()) 
 			mapping = mapper.readValue(mappingFile, new TypeReference<HashMap<String,String>>() {});
 
-		
+		//Encoding
+		File encodingFile = new File(path + "/encoding.json");
+		Map<String,String> encoding = new HashMap<String,String>();
+		if(encodingFile.exists()) 
+			encoding = mapper.readValue(encodingFile, new TypeReference<HashMap<String,String>>() {});
 		
 		
 		Files.copy(emailheader.toPath(), new File(targetPath.getPath() + "/emailheader.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
+		Files.copy(txtheader.toPath(), new File(attachmentPath.getPath() + "/header.txt").toPath(), StandardCopyOption.REPLACE_EXISTING);
 		
+		if(signatureFile.exists())
+			Files.copy(signatureFile.toPath(), new File(targetPath.getPath() + "/signature.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
+
 		
 		List<String> usedFiles = new ArrayList<String>();
 		List<String> ignoredFiles = new ArrayList<String>();
@@ -115,7 +136,7 @@ public class ContentConverterImpl implements ContentConverter {
 				throw new IOException(file + " not exists");
 			
 			
-			System.out.println(file);
+			println(file);
 
 			if(f.isDirectory())
 				continue;
@@ -134,21 +155,29 @@ public class ContentConverterImpl implements ContentConverter {
 				Files.copy(f.toPath(), new File(attachmentPath.getPath() + "/" + fileName).toPath(), StandardCopyOption.REPLACE_EXISTING);
 			break;
 			case Content:
+				String charset = encoding.get(file);
+				if(charset == null) charset = "utf-8";
+				
+				//Create copy in attachments
+				Files.copy(f.toPath(), new File(attachmentPath.getPath() + "/" + charset +"_" + fileName).toPath(), StandardCopyOption.REPLACE_EXISTING);
+
 				
 				if (extension.equals("TXT")) {
 					String text = getContentPartPath("txt");
-					Files.copy(f.toPath(), new File(text).toPath(), StandardCopyOption.REPLACE_EXISTING);
+					transform(f,charset,new File(text),"UTF-8");
+					
 					break;
 				}
 				
 				if (extension.equals("HTML")) {
-					
+
 					String tempHtml = getTempPath("html");
 					String screen = getContentPartPath("png");
 
 					HtmlParser htmlParser = new HtmlParser();
-					System.out.println("Create " + tempHtml);
-					Set<String> inlineImages = htmlParser.replaceContentIds(f.getPath(), tempHtml,path,mapping);
+					println("Create " + tempHtml);
+					
+					Set<String> inlineImages = htmlParser.replaceContentIds(f.getPath(), charset, tempHtml,path,mapping);
 
 					//Copy Files
 					for(String inlineImage : inlineImages)
@@ -161,7 +190,7 @@ public class ContentConverterImpl implements ContentConverter {
 					
 					try {
 						HtmlEngine htmlEngine = new HtmlEngine();
-						System.out.println("Create " + screen);
+						println("Create " + screen);
 						htmlEngine.createScreenShot(tempHtml, screen);
 					} catch (InterruptedException e) {
 						throw new IOException(e);
@@ -170,14 +199,20 @@ public class ContentConverterImpl implements ContentConverter {
 				}
 				throw new RuntimeException("Not implemented " + f.getName() + " in Content");
 			case Ignore:
-				System.out.println("Ignore "+f.getPath());
+				println("Ignore "+f.getPath());
 				ignoredFiles.add(file);
 			break;
+			case Signature:
+				//copy original signature
+				Files.copy(f.toPath(), new File(attachmentPath.getPath() + "/" + fileName).toPath(), StandardCopyOption.REPLACE_EXISTING);
+				break;
+			default:
+				throw new RuntimeException(" default case ");
 			}			
 		}
 		
-		System.out.println("UsedFiles "+usedFiles);
-		System.out.println("IgnoredFiles "+ignoredFiles);
+		println("UsedFiles "+usedFiles);
+		println("IgnoredFiles "+ignoredFiles);
 		
 		for(String file : ignoredFiles)
 		{
@@ -191,12 +226,18 @@ public class ContentConverterImpl implements ContentConverter {
 	
 	}
 	
+	private void println(Object obj) {
+		//do nothing in moment
+	}
+
 	private TypeOfPart typeofpart(String filepath,String extension) throws IOException {
+		
 		String directory = new File(filepath).getParentFile().getName();
 		
 		if(directory.startsWith("alternative"))
 		{
 			if (extension.equals("HTML") || extension.equals("TXT")) return TypeOfPart.Content;
+			if (extension.equals("ICS")) return TypeOfPart.Attachment;
 			throw new IOException("unexpected file "+filepath);
 		}
 		
@@ -212,12 +253,27 @@ public class ContentConverterImpl implements ContentConverter {
 			return TypeOfPart.Attachment;
 		}
 		
+		if(directory.startsWith("signed"))
+		{
+			if (extension.equals("P7S")) return TypeOfPart.Signature;
+		}
+		
 		//Root
 		if (extension.equals("HTML") || extension.equals("TXT")) return TypeOfPart.Content;
-		throw new IOException("unexpected file "+filepath);
+		
+		throw new IOException("unexpected extension "+extension+" in Directory "+directory);
 	}
 
-	
+	private void transform(File source, String srcEncoding, File target, String tgtEncoding) throws IOException {
+	    try (
+	      BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(source), srcEncoding));
+	      BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(target), tgtEncoding)); ) {
+	          char[] buffer = new char[16384];
+	          int read;
+	          while ((read = br.read(buffer)) != -1)
+	              bw.write(buffer, 0, read);
+	    } 
+	}
 	private String getTempPath(String extension) {
 		return String.format("%s/%s.%s",tempPath.getPath(),UUID.randomUUID(),extension);
 	}

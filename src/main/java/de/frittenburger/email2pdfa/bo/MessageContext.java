@@ -45,6 +45,8 @@ public class MessageContext {
 	public String relavtivePath = ""; //relativer Pfad
 	public Set<String> pathCache = new HashSet<String>();
 	public List<String> order = new ArrayList<String>();
+
+	public Map<String,String> contentEncoding = new HashMap<String,String>();
 	
 	public String mesgPath() {
 		return rootPath + relavtivePath;

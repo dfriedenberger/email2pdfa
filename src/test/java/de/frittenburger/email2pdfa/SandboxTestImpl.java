@@ -34,6 +34,7 @@ public class SandboxTestImpl implements Sandbox {
 	private String messagePath;
 	private String inBoxPath;
 	private String contentPath;
+	private String pdfPath;
 	private String archivPath;
 
 	public SandboxTestImpl setMessagePath(String messagePath) {
@@ -51,6 +52,11 @@ public class SandboxTestImpl implements Sandbox {
 		return this;
 	}
 
+	public SandboxTestImpl setPdfPath(String pdfPath) {
+		this.pdfPath = pdfPath;
+		return this;
+	}
+	
 	public SandboxTestImpl setArchivPath(String archivPath) {
 		this.archivPath = archivPath;
 		return this;
@@ -68,13 +74,17 @@ public class SandboxTestImpl implements Sandbox {
 		return contentPath;
 	}
 	
+	@Override
+	public String getPdfPath() {
+		return pdfPath;
+	}
+	
+	@Override
 	public String getArchivPath() {
 		return archivPath; 
 	}
 	
-	public void init() {
-		//nix
-	}
+
 
 	public static <T> String getTestPath(Class<T> class1) {
 
@@ -106,6 +116,8 @@ public class SandboxTestImpl implements Sandbox {
 		  if (!f.delete())
 		    throw new FileNotFoundException("Failed to delete file: " + f);
 		}
+
+	
 
 	
 

@@ -31,9 +31,8 @@ public interface Sandbox {
 
 	String getContentPath();
 
+	String getPdfPath();
+	
 	String getArchivPath();
-
-	void init();
-
 
 }

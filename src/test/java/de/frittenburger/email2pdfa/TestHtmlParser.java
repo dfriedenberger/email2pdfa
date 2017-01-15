@@ -47,7 +47,7 @@ public class TestHtmlParser {
 		Map<String,String> files = new HashMap<String,String>();
 		files.put("xxxx","abcdef.png");
 		
-		Set<String> inline = htmlParser.replaceContentIds(resources + "/alternative/test.html",out + "/test.html", resources , files);
+		Set<String> inline = htmlParser.replaceContentIds(resources + "/alternative/test.html", "UTF-8" ,out + "/test.html",  resources , files);
 		Assert.assertEquals(0, inline.size());	
 
 	}

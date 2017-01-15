@@ -25,9 +25,11 @@ package de.frittenburger.email2pdfa.impl;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -38,10 +40,12 @@ import org.jsoup.nodes.Element;
 
 public class HtmlParser {
 
-	public Set<String> replaceContentIds(String srcPath, String destPath, String path , Map<String, String> mapping) throws IOException {
+	
+	public Set<String> replaceContentIds(String srcPath, String srcEncoding, String destPath, String path , Map<String, String> mapping) throws IOException {
 		
 		Set<String> usedFiles = new HashSet<String>();
-		String unsafe = readFile(srcPath);
+		Charset charset = Charset.forName(srcEncoding);
+		String unsafe = readFile(srcPath,charset);
 		//String safe = Jsoup.clean(unsafe, Whitelist.basic());
 		Document doc = Jsoup.parse(unsafe);
 
@@ -89,8 +93,11 @@ public class HtmlParser {
 		
 	}
 
-	private String readFile(String file) throws IOException {
-	    BufferedReader reader = new BufferedReader(new FileReader (file));
+	
+
+	private String readFile(String file, Charset charset) throws IOException {
+		
+	    BufferedReader reader = new BufferedReader(new InputStreamReader( new FileInputStream (file), charset ));
 	    String         line = null;
 	    StringBuilder  stringBuilder = new StringBuilder();
 	    String         ls = System.getProperty("line.separator");

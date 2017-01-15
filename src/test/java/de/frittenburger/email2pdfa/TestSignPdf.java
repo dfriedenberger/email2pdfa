@@ -44,9 +44,12 @@ public class TestSignPdf {
 	public void test() throws IOException, GeneralSecurityException {
 		
 		String senderkey = "email1@example.org";
-
-		new File(out + "/" + senderkey).mkdir();
-		Files.copy(new File(resource).toPath(), new File(out + "/"+senderkey+"/test.pdf").toPath(),StandardCopyOption.REPLACE_EXISTING);
+		String outPdf = out + "/pdf";
+		String outArchiv = out + "/archiv";
+		new File(outPdf).mkdir();
+		new File(outArchiv).mkdir();
+		new File(outPdf + "/" + senderkey).mkdir();
+		Files.copy(new File(resource).toPath(), new File(outPdf + "/"+senderkey+"/test.pdf").toPath(),StandardCopyOption.REPLACE_EXISTING);
 		
 		
 		PDFASigner pdfCreator = new PDFASignerImpl();
@@ -58,9 +61,9 @@ public class TestSignPdf {
 			pdfCreatorSignatureData.location = "irgendwo";
 			pdfCreatorSignatureData.reason = "deshalb";
 			
-			pdfCreator.sign(pdfCreatorSignatureData,senderkey,new SandboxTestImpl().setArchivPath(out));
+			pdfCreator.sign(pdfCreatorSignatureData,senderkey,new SandboxTestImpl().setPdfPath(outPdf).setArchivPath(outArchiv));
 			
-			Assert.assertTrue(senderkey + "/test_signed.pdf exists",new File(out + "/"+senderkey+"/test_signed.pdf").exists());
+			Assert.assertTrue(senderkey + "/test_signed.pdf exists",new File(outArchiv + "/"+senderkey+"/test_signed.pdf").exists());
 			
 	}
 

@@ -1,5 +1,15 @@
+#basic configuration
+sandboxpath = sandbox 
+
 #configuration for post box
 provider = pop3 #or imap
 mailserver = mailserver
 username = username
 password = password
+
+#configuration for signing
+keystorepath = path to p12/pfx keystorefile
+keystorepassword = password for keystorefile
+privatekeypassword = password for privatekey
+location = Irgendwo
+reason = Deshalb

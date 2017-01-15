@@ -39,12 +39,12 @@ public class HtmlEngine {
 		path = path.replaceFirst(":\\\\", "://");
 		path = path.replaceAll("\\\\", "/");
 
-		System.out.println("Path "+path);
-		System.out.println("Image "+imageFile);
+		//System.out.println("Path "+path);
+		//System.out.println("Image "+imageFile);
 
 		
 		ProcessBuilder processBuilder = new ProcessBuilder("phantomjs/phantomjs.exe","phantomjs/mkScreenshot.js", path  ,imageFile);
-		processBuilder.redirectOutput(Redirect.INHERIT);
+		//processBuilder.redirectOutput(Redirect.INHERIT);
 		processBuilder.redirectError(Redirect.INHERIT);
 		Process process = processBuilder.start();
 		if(!process.waitFor(60, TimeUnit.SECONDS))

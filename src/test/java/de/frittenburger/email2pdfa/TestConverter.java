@@ -46,6 +46,7 @@ public class TestConverter {
 		ContentConverter contentConverter = new ContentConverterImpl();
 		contentConverter.convert(resources + mail,new SandboxTestImpl().setContentPath(out));
 
+		Assert.assertTrue("header.txt exists", new File(out + mail + "/attachments/header.txt").isFile());
 		Assert.assertTrue("emailheader.json exists", new File(out + mail + "/emailheader.json").isFile());
 		Assert.assertTrue("Folder content exists", new File(out + mail + "/content").isDirectory());
 		Assert.assertTrue("File content exists", new File(out + mail + "/content/part001.txt").isFile());
@@ -58,7 +59,8 @@ public class TestConverter {
 		String mail = "/testmail2";
 		ContentConverter contentConverter = new ContentConverterImpl();
 		contentConverter.convert(resources + mail,new SandboxTestImpl().setContentPath(out));
-
+		
+		Assert.assertTrue("header.txt exists", new File(out + mail + "/attachments/header.txt").isFile());
 		Assert.assertTrue("emailheader.json exists", new File(out + mail + "/emailheader.json").isFile());
 		Assert.assertTrue("Folder content exists", new File(out + mail + "/content").isDirectory());
 		Assert.assertTrue("File part001.txt exists", new File(out + mail + "/content/part001.txt").isFile());
@@ -73,6 +75,7 @@ public class TestConverter {
 		ContentConverter contentConverter = new ContentConverterImpl();
 		contentConverter.convert(resources + mail,new SandboxTestImpl().setContentPath(out));
 
+		Assert.assertTrue("header.txt exists", new File(out + mail + "/attachments/header.txt").isFile());
 		Assert.assertTrue("emailheader.json exists", new File(out + mail + "/emailheader.json").isFile());
 		Assert.assertTrue("Folder content exists", new File(out + mail + "/content").isDirectory());
 		Assert.assertTrue("File part001.png exists", new File(out + mail + "/content/part001.png").isFile());
@@ -86,6 +89,7 @@ public class TestConverter {
 		ContentConverter contentConverter = new ContentConverterImpl();
 		contentConverter.convert(resources + mail,new SandboxTestImpl().setContentPath(out));
 		
+		Assert.assertTrue("header.txt exists", new File(out + mail + "/attachments/header.txt").isFile());
 		Assert.assertTrue("emailheader.json exists", new File(out + mail + "/emailheader.json").isFile());
 		Assert.assertTrue("Folder content exists", new File(out + mail + "/content").isDirectory());
 		Assert.assertTrue("File content exists", new File(out + mail + "/content/part001.txt").isFile());
@@ -108,6 +112,7 @@ public class TestConverter {
 		ContentConverter contentConverter = new ContentConverterImpl();
 		contentConverter.convert(resources + mail,new SandboxTestImpl().setContentPath(out));
 
+		Assert.assertTrue("header.txt exists", new File(out + mail + "/attachments/header.txt").isFile());
 		Assert.assertTrue("emailheader.json exists", new File(out + mail + "/emailheader.json").isFile());
 		Assert.assertTrue("Folder content exists", new File(out + mail + "/content").isDirectory());
 		Assert.assertTrue("File part001.png exists", new File(out + mail + "/content/part001.png").isFile());
@@ -121,6 +126,7 @@ public class TestConverter {
 		ContentConverter contentConverter = new ContentConverterImpl();
 		contentConverter.convert(resources + mail,new SandboxTestImpl().setContentPath(out));
 
+		Assert.assertTrue("header.txt exists", new File(out + mail + "/attachments/header.txt").isFile());
 		Assert.assertTrue("emailheader.json exists", new File(out + mail + "/emailheader.json").isFile());
 		Assert.assertTrue("Folder content exists", new File(out + mail + "/content").isDirectory());
 		Assert.assertTrue("File part001.png exists", new File(out + mail + "/content/part001.png").isFile());
@@ -138,5 +144,42 @@ public class TestConverter {
 
 		
 	}
+	
+	@Test
+	public void test007() throws IOException {
+		String mail = "/testmail7";
+		ContentConverter contentConverter = new ContentConverterImpl();
+		contentConverter.convert(resources + mail,new SandboxTestImpl().setContentPath(out));
+
+		Assert.assertTrue("header.txt exists", new File(out + mail + "/attachments/header.txt").isFile());
+		Assert.assertTrue("emailheader.json exists", new File(out + mail + "/emailheader.json").isFile());
+		Assert.assertTrue("signature.json exists", new File(out + mail + "/signature.json").isFile());
+		Assert.assertTrue("Folder content exists", new File(out + mail + "/content").isDirectory());
+		Assert.assertTrue("File part001.txt exists", new File(out + mail + "/content/part001.txt").isFile());
+	
+		Assert.assertTrue("Folder attachments exists", new File(out + mail + "/attachments").isDirectory());
+		
+		Assert.assertEquals(1, new File(out + mail + "/attachments").listFiles(new FilenameFilter() {
+
+			@Override
+			public boolean accept(File arg0, String name) {
+				return name.endsWith(".png");
+			}}).length);
+		
+		Assert.assertEquals(2, new File(out + mail + "/attachments").listFiles(new FilenameFilter() {
+
+			@Override
+			public boolean accept(File arg0, String name) {
+				return name.endsWith(".txt");
+			}}).length);
+		
+		Assert.assertEquals(1, new File(out + mail + "/attachments").listFiles(new FilenameFilter() {
+
+			@Override
+			public boolean accept(File arg0, String name) {
+				return name.endsWith(".p7s");
+			}}).length);
+	}
+	
 	
 }

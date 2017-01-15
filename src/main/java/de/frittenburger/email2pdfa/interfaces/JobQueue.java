@@ -1,5 +1,6 @@
 package de.frittenburger.email2pdfa.interfaces;
 
+
 public interface JobQueue {
 
 
