@@ -105,7 +105,7 @@ public class PDFASignerImpl implements PDFASigner {
                 .setLocation(signatureData.location)
                 .setReuseAppearance(false);
         
-        Rectangle rect = new Rectangle(36, 648, 200, 100);
+        Rectangle rect = new Rectangle(350, 10, 200, 100);
         appearance
                 .setPageRect(rect)
                 .setPageNumber(1);

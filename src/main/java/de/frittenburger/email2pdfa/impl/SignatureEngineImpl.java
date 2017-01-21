@@ -8,9 +8,9 @@ import javax.mail.Multipart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
-import org.bouncycastle.asn1.x500.AttributeTypeAndValue;
-import org.bouncycastle.asn1.x500.RDN;
+import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x500.style.IETFUtils;
+
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.SignerInformation;
@@ -36,8 +36,7 @@ public class SignatureEngineImpl implements SignatureEngine {
 		
 		try
 		{
-		   SignatureInfo info = new SignatureInfo(toolkit.isSigned(message));
-		   
+		   SignatureInfo info = SignatureInfo.create(toolkit.isSigned(message));
 		   if(!info.hasSignature)
 			   return info;
 		   
@@ -58,14 +57,18 @@ public class SignatureEngineImpl implements SignatureEngine {
 
 		   if(toolkit.isValidSignature(message, new JcaSimpleSignerInfoVerifierBuilder().setProvider(new BouncyCastleProvider()).build(certificate)))
 		   {
-			   info.subject.put("string",certificate.getSubject().toString() );
-			   for(RDN rdn : certificate.getSubject().getRDNs())
-			   {
-				   AttributeTypeAndValue av = rdn.getFirst();
-				   String type = av.getType().getId();
-				   String val = IETFUtils.valueToString(av.getValue());
-				   info.subject.put(type, val);
-			   }
+			   info.info = certificate.getSubject().toString();
+			   
+			   
+			   //KeyPurposeId.id_kp_emailProtection.toOID()
+			   //List var = certificate.getExtensionOIDs();
+			 
+			   //System.out.println(var);
+			   //System.out.println(KeyPurposeId.id_kp_emailProtection.toOID());
+
+			   //DERObjectIdentifier.emailProtection 
+			   info.email = IETFUtils.valueToString(certificate.getSubject().getRDNs(BCStyle.E)[0].getTypesAndValues()[0].getValue());
+			   
 			 
 		   }
 		   return info;
@@ -83,5 +86,8 @@ public class SignatureEngineImpl implements SignatureEngine {
 		}
 		
 	}
+
+
+
 
 }

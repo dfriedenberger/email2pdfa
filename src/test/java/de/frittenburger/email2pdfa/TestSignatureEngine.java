@@ -11,7 +11,6 @@ import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
 
-import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.junit.Test;
 
 import de.frittenburger.email2pdfa.bo.SignatureInfo;
@@ -33,8 +32,8 @@ public class TestSignatureEngine {
 	   
 	   SignatureInfo s = engine.check(mime);
 	   assertTrue(s.hasSignature);
-	   assertEquals("dirk@friedenberger.net",s.subject.get(BCStyle.E.getId()));
-	   assertEquals("C=DE,O=Dirk Friedenberger,OU=www.frittenburger.de,CN=Dirk Friedenberger,E=dirk@friedenberger.net",s.subject.get("string"));
+	   assertEquals("dirk@friedenberger.net",s.email);
+	   assertEquals("C=DE,O=Dirk Friedenberger,OU=www.frittenburger.de,CN=Dirk Friedenberger,E=dirk@friedenberger.net",s.info);
 
 	}
 
@@ -47,7 +46,9 @@ public class TestSignatureEngine {
 	   
 	   SignatureInfo s = engine.check(mime);
 	   assertFalse(s.hasSignature);
-	   assertEquals(0,s.subject.size());
+	   assertNull(s.info);
+	   assertNull(s.email);
+
 	}
 	
 	@Test(expected=IOException.class)
@@ -59,8 +60,9 @@ public class TestSignatureEngine {
 	   
 	   SignatureInfo s = engine.check(mime);
 	   assertTrue(s.hasSignature);
-	   assertEquals(0,s.subject.size());
-
+	   assertNull(s.info);
+	   assertNull(s.email);
+	   
 	}
 	
 	private MimeMessage readMime(String emlFile) throws IOException, MessagingException {
