@@ -23,74 +23,133 @@ package de.frittenburger.email2pdfa.impl;
  *  This copyright notice MUST APPEAR in all copies of the script!
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
+import de.frittenburger.email2pdfa.bo.FolderWrapper;
 import de.frittenburger.email2pdfa.bo.EmailServiceAccountData;
+import de.frittenburger.email2pdfa.bo.Range;
 import de.frittenburger.email2pdfa.interfaces.EmailCache;
+import de.frittenburger.email2pdfa.interfaces.EmailIndex;
+import de.frittenburger.email2pdfa.interfaces.EmailIndexSyncService;
 import de.frittenburger.email2pdfa.interfaces.EmailService;
+import de.frittenburger.email2pdfa.interfaces.Logger;
 import de.frittenburger.email2pdfa.interfaces.Sandbox;
+import de.frittenburger.email2pdfa.interfaces.Sequence;
 
 public class EmailServiceImpl implements EmailService {
 
-	private int rangefrom = -1;
 	private final EmailCache emailCache;
-	private static int RANGE = 10;
+	private final EmailIndex emailIndex;
 
-	public EmailServiceImpl(EmailCache emailCache) {
+
+	private final Logger logger = new LoggerImpl(this.getClass().getSimpleName());
+
+	private EmailIndexSyncService emailIndexSyncService = new EmailIndexSyncServiceImpl();
+	
+	private EmailBoxReader reader = null;
+	private String storeKey = null;
+
+
+	private String folder = null;
+	private Sequence sequence = null;
+
+	public EmailServiceImpl(EmailCache emailCache, EmailIndex emailIndex) {
 		this.emailCache = emailCache;
+		this.emailIndex = emailIndex;
 	}
 
-	public int getMessages(EmailServiceAccountData emailServiceAccountData, Sandbox sandbox) {
+	@Override
+	public void open(EmailServiceAccountData emailServiceAccountData) throws IOException {
+		reader = new EmailBoxReader(emailServiceAccountData);
+		storeKey = String.format("%s/%s", emailServiceAccountData.mailserver,emailServiceAccountData.username);
+		reader.open();
+	}
 
-		EmailBoxReader reader = new EmailBoxReader(emailServiceAccountData);
+	@Override
+	public void close() {
+		try {
+			reader.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		reader = null;
+	}
 
-		if (rangefrom == 1)
-			return 0; // ready
+	@Override
+	public void openFolder(String folder,Sequence sequence) throws IOException {
+		this.folder = folder;
+		this.sequence = sequence;
+	}
+
+	@Override
+	public List<String> getFolders() throws IOException {
+		List<String> folderList = new ArrayList<String>();
+		
+		for(String fd : reader.listFolders())
+		{
+			//Todo: Filter konfigurierbar
+			if(!fd.toLowerCase().startsWith("inbox")) 
+			{
+				System.out.println("Filter "+fd);
+				continue;
+			}
+			folderList.add(fd);
+		}
+		return folderList;
+		
+	}
+
+	@Override
+	public Sequence getUnreadMessages(String folder) throws IOException {
+		
+		int cnt = reader.cnt(folder);
+		return emailIndexSyncService.sync(emailIndex, storeKey, new FolderWrapper(reader,folder,cnt));
+		
+	}
+	
+	
+	@Override
+	public boolean getMessages(Sandbox sandbox) {
+
+		if (!sequence.hasNext())
+			return true; // ready
+
+		Range range = sequence.next();
+
+		logger.info("Read Range " + range);
 
 		try {
-			
-			int readMessages = 0;
 
-			reader.open();
+			String[] msglst = reader.listMessages(folder, range);
 
-			if (rangefrom == -1) {
-				int cnt = reader.cnt();
-				System.out.println(cnt + "Messages");
-				rangefrom = cnt - RANGE;
-			} else {
-				rangefrom = rangefrom - RANGE - 1;
+			for (int i = 0; i < msglst.length; i++) {
+				String msgid = msglst[i];
+				int index = range.from + i;
+
+				if(msgid == null) 
+				{
+					emailIndex.registerError(storeKey, folder, index);
+					continue;
+				}
+					
+				// Download Message ???
+				if (!emailCache.exists(msgid)) {
+					String path = sandbox.getInBoxPath() + "/" + msgid + ".eml";
+					reader.read(folder, msgid, path);
+					emailCache.add(msgid, msgid + ".eml");
+				}
+				emailIndex.register(storeKey, folder, msgid, index);
 
 			}
-			int rangeto = rangefrom + RANGE;
 
-			if (rangefrom < 1)
-				rangefrom = 1;
-
-			System.out.println("Read Range " + rangefrom + " => " + rangeto);
-
-			List<String> msglst = reader.list(rangefrom, rangeto);
-
-			
-			
-			for (String msgid : msglst) {
-			
-				if(emailCache.exists(msgid)) continue;
-				String path = sandbox.getInBoxPath() + "/"+msgid+".eml";
-			
-				emailCache.add(msgid,msgid+".eml");
-				
-				reader.read(msgid,path);
-				readMessages++;
-			}
-
-			reader.close();
-			
-			return readMessages;
-		} catch (Exception e) {
-			e.printStackTrace();
-			return -1;
+		} catch (IOException e) {
+			logger.error(e);
 		}
+		return false;
 
 	}
 
+	
 }

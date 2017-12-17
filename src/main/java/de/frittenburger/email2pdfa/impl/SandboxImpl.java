@@ -38,6 +38,7 @@ public class SandboxImpl implements Sandbox {
 		
 		//init
 		new File(getInBoxPath()).mkdir();
+		new File(getInBoxCachePath()).mkdir();
 		new File(getMessagePath()).mkdir();	
 		new File(getContentPath()).mkdir();		
 		new File(getPdfPath()).mkdir();		
@@ -47,7 +48,11 @@ public class SandboxImpl implements Sandbox {
 	public String getInBoxPath() {
 		return path + "/in";
 	}
-
+	
+	public String getInBoxCachePath() {
+		return path + "/incache";
+	}
+	
 	public String getMessagePath() {
 		return path + "/messages";
 	}
@@ -64,6 +69,8 @@ public class SandboxImpl implements Sandbox {
 	public String getPdfPath() {
 		return path + "/pdfs";
 	}
+
+	
 	
 
 }

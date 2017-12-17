@@ -23,22 +23,30 @@ package de.frittenburger.email2pdfa.impl;
  *  This copyright notice MUST APPEAR in all copies of the script!
  */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FilenameFilter;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map.Entry;
 
+import de.frittenburger.bo.AdminPanelException;
+import de.frittenburger.core.Database;
+import de.frittenburger.email2pdfa.bo.EmailDataFilePath;
 import de.frittenburger.email2pdfa.bo.EmailServiceAccountData;
+import de.frittenburger.email2pdfa.bo.GlobalConfig;
 import de.frittenburger.email2pdfa.bo.PdfCreatorSignatureData;
 import de.frittenburger.email2pdfa.interfaces.Configuration;
 import de.frittenburger.email2pdfa.interfaces.Sandbox;
+import de.frittenburger.form.DataDirectory;
+import de.frittenburger.form.EmailAccount;
+import de.frittenburger.form.Signature;
+
 
 public class ConfigurationImpl implements Configuration {
 
-	private EmailServiceAccountData emailaccountdata = null;
+	private List<EmailServiceAccountData> emailaccountdata = new ArrayList<EmailServiceAccountData>();
+	private List<EmailDataFilePath> emaildatafiles = new ArrayList<EmailDataFilePath>();
+
 	private PdfCreatorSignatureData signaturedata = null;
 	private Sandbox sandbox = null;
 	private String name = null;
@@ -46,65 +54,71 @@ public class ConfigurationImpl implements Configuration {
 	private ConfigurationImpl() {}
 	
 	
-	public static List<Configuration> read(String path) throws IOException {
-
-		File config[] = new File(path).listFiles(new FilenameFilter() {
-
-			@Override
-			public boolean accept(File dir, String name) {
-				return name.endsWith(".properties");
-			}
-		});
+	public static Configuration read() throws IOException, AdminPanelException {
 
 		
-		List<Configuration> configuration = new ArrayList<Configuration>();
-		
-		for (File c : config) {
-			System.out.println("Read Properties " + c.getName());
+		Database database = new Database();
 
-			Properties properties = new Properties();
-			FileInputStream is = null;
-			try {
-				is = new FileInputStream(c);
-				properties.load(is);
-			} finally {
-				if (is != null)
-					is.close();
-			}
-
-			ConfigurationImpl conf = new ConfigurationImpl();
-			
-			conf.name = c.getName().replaceFirst("[.][^.]+$", "");
-			
-			conf.sandbox = new SandboxImpl(properties.getProperty("sandboxpath").trim());
-			
-			
-			conf.emailaccountdata = new EmailServiceAccountData();
-			conf.emailaccountdata.provider = properties.getProperty("provider");
-			conf.emailaccountdata.mailserver = properties.getProperty("mailserver");
-			conf.emailaccountdata.username = properties.getProperty("username");
-			conf.emailaccountdata.password = properties.getProperty("password");
-
-			conf.signaturedata = new PdfCreatorSignatureData();
-			conf.signaturedata.keyStorePath = properties.getProperty("keystorepath");
-			conf.signaturedata.keyStorePassword = properties.getProperty("keystorepassword");
-			conf.signaturedata.privateKeyPassword = properties.getProperty("privatekeypassword");
-			conf.signaturedata.location = properties.getProperty("location");
-			conf.signaturedata.reason = properties.getProperty("reason");
 		
+	    List<Entry<String, GlobalConfig>> globals = database.getForms(GlobalConfig.class);
+	    Entry<String, GlobalConfig> ge = globals.iterator().next();
+	    String key = ge.getKey();
+	    GlobalConfig global = ge.getValue();
+
+	    ConfigurationImpl conf = new ConfigurationImpl();
+		conf.name = key;
+		conf.sandbox = new SandboxImpl(global.path.getValue());
+	    
 		
-			configuration.add(conf);
+		List<Entry<String, EmailAccount>> accounts = database.getForms(EmailAccount.class);
+		for (Entry<String, EmailAccount> e : accounts) {
+		
+			EmailAccount account = e.getValue();
+			EmailServiceAccountData emailaccountdata = new EmailServiceAccountData();
+			emailaccountdata.name = e.getKey();
+			emailaccountdata.provider = account.provider.getValue();
+			emailaccountdata.mailserver = account.server.getValue();
+			emailaccountdata.username = account.username.getValue();
+			emailaccountdata.password = account.password.getValue();
 			
+			conf.emailaccountdata.add(emailaccountdata);
 		}
-		return configuration;
+		
+		List<Entry<String, DataDirectory>> directories = database.getForms(DataDirectory.class);
+		for (Entry<String, DataDirectory> e : directories) {
+		
+			DataDirectory account = e.getValue();
+			EmailDataFilePath emaildatafilepath = new EmailDataFilePath();
+			emaildatafilepath.name = e.getKey();
+			emaildatafilepath.path = account.directory.getValue();
+			conf.emaildatafiles.add(emaildatafilepath);
+		}
+		
+		if (database.countForm(Signature.class) > 0) {
+			Signature signature = database.getForms(Signature.class).iterator().next().getValue();
+			conf.signaturedata = new PdfCreatorSignatureData();
+			conf.signaturedata.keyStorePath = signature.keystorepath.getValue();
+			conf.signaturedata.keyStorePassword = signature.keystorepassword.getValue();
+			conf.signaturedata.privateKeyPassword = signature.privatekeypassword.getValue();
+			conf.signaturedata.location = signature.location.getValue();
+			conf.signaturedata.reason = signature.reason.getValue();
+		}
+		
+		
+		return conf;
 	}
 
 
 	@Override
-	public EmailServiceAccountData getEmailServiceAccountData() {
+	public List<EmailServiceAccountData> getEmailServiceAccountData() {
 		return emailaccountdata;
 	}
-
+	
+	@Override
+	public List<EmailDataFilePath> getEmailDataFilePathes() {
+		return emaildatafiles;
+	}
+	
 	@Override
 	public PdfCreatorSignatureData getPdfCreatorSignatureData() {
 		return signaturedata;
@@ -119,12 +133,6 @@ public class ConfigurationImpl implements Configuration {
 	@Override
 	public String getName() {
 		return name;
-	}
-
-
-	@Override
-	public String getEmailCacheFile() {
-		return sandbox.getInBoxPath() + "/emailcache.txt";
 	}
 
 }

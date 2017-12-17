@@ -23,6 +23,7 @@ package de.frittenburger.email2pdfa.impl;
  *  This copyright notice MUST APPEAR in all copies of the script!
  */
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,6 +40,8 @@ import javax.mail.Store;
 
 import de.frittenburger.email2pdfa.bo.EmailHeader;
 import de.frittenburger.email2pdfa.bo.EmailServiceAccountData;
+import de.frittenburger.email2pdfa.bo.Range;
+import de.frittenburger.email2pdfa.interfaces.Logger;
 import de.frittenburger.email2pdfa.interfaces.NameService;
 
 
@@ -53,7 +56,8 @@ public class EmailBoxReader  {
 	private String password;
 	private Map<String, Integer> cache = null;
 	private NameService nameService = new NameServiceImpl();
-	
+	private Logger logger = new LoggerImpl(this.getClass().getSimpleName());
+
 	public EmailBoxReader(EmailServiceAccountData config) {
 		provider = config.provider;
 		mailserver = config.mailserver;
@@ -90,9 +94,9 @@ public class EmailBoxReader  {
 		}
 	}
 
-	public int cnt() throws IOException {
+	public int cnt(String folder) throws IOException {
 		try {
-			Folder inbox = store.getFolder("Inbox");
+			Folder inbox = store.getFolder(folder);
 
 			inbox.open(Folder.READ_ONLY);
 			int cnt = inbox.getMessageCount();
@@ -104,28 +108,84 @@ public class EmailBoxReader  {
 
 	}
 
-	public List<String> list(int from, int to) throws IOException {
 	
-		List<String> mesgids = new ArrayList<String>();
+	public List<String> listFolders() throws IOException {
+		try {
+			List<String> folder = new ArrayList<String>();
+			list(folder, store.getDefaultFolder());
+			return folder;
+		} catch (MessagingException e) {
+			throw new IOException(e);
+		}
+
+	}
+
+	private void list(List<String> folderList, Folder folder) throws MessagingException {
+		
+		for (Folder fd : folder.list()) {
+			folderList.add(fd.getFullName());
+			if(provider.equals("pop3")) continue;
+			list(folderList, fd);
+		}
+	}
+	
+	public String listMessage(String folder, int ix) throws IOException {
+		
+		try {
+			Folder inbox = store.getFolder(folder);
+	
+			inbox.open(Folder.READ_ONLY);
+			
+			javax.mail.Message message = inbox.getMessage(ix);
+			EmailHeader emailheader = nameService.getEmailHeader(message);
+			return emailheader.mesgkey;
+		
+		} catch (Exception e) {
+			
+			if(e instanceof MessagingException)
+			{
+				logger.errorFormat("Invalid email (%s) in folder=%s index=%d",e.getMessage(),folder ,ix);
+				return null;
+			}
+			else
+			{
+				e.printStackTrace();
+			}
+			throw new IOException(e);
+
+		}
+		
+	}
+
+	public String[] listMessages(String folder,Range range) throws IOException {
+	
+		String[] mesgids = new String[range.to - range.from + 1];
 		try {
 
-			Folder inbox = store.getFolder("Inbox");
+			Folder inbox = store.getFolder(folder);
 
 			inbox.open(Folder.READ_ONLY);
 			
-			javax.mail.Message[] message = inbox.getMessages(from,to);
+			javax.mail.Message[] message = inbox.getMessages(range.from,range.to);
 			for (int i = 0; i < message.length; i++) {
-
+				mesgids[i] = null;
 				try {
 
 					EmailHeader emailheader = nameService.getEmailHeader(message[i]);
 
-					cache.put(emailheader.mesgkey, from + i);
-					mesgids.add(emailheader.mesgkey);
+					cache.put(emailheader.mesgkey, range.from + i);
+					mesgids[i] = emailheader.mesgkey;
 					
 				} catch (Exception e) {
-					e.printStackTrace();
-					// TODO: save to tmp-File
+					
+					if(e instanceof MessagingException)
+					{
+						message[i].writeTo(new FileOutputStream(new File("c:/temp/mailerror.eml")));
+						logger.errorFormat("Invalid email (%s) in folder=%s index=%d",e.getMessage(),folder ,range.from + i);
+					}
+					else
+						e.printStackTrace();
+					
 				} 
 			}
 
@@ -137,11 +197,11 @@ public class EmailBoxReader  {
 		return mesgids;
 	}
 
-	public void read(String id,String filename) throws IOException {
+	public void read(String folder,String id,String filename) throws IOException {
 		
 		try {
 
-			Folder inbox = store.getFolder("Inbox");
+			Folder inbox = store.getFolder(folder);
 
 			inbox.open(Folder.READ_ONLY);
 			
@@ -169,6 +229,9 @@ public class EmailBoxReader  {
 		// TODO Auto-generated method stub
 		
 	}
+
+	
+	
 
 	
 }

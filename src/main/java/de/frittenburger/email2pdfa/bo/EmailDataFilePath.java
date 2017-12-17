@@ -1,4 +1,4 @@
-package de.frittenburger.email2pdfa.interfaces;
+package de.frittenburger.email2pdfa.bo;
 /*
  *  Copyright notice
  *
@@ -22,20 +22,10 @@ package de.frittenburger.email2pdfa.interfaces;
  *
  *  This copyright notice MUST APPEAR in all copies of the script!
  */
+public class EmailDataFilePath {
 
+	public String name;
 
-import java.util.List;
-
-import de.frittenburger.email2pdfa.bo.EmailDataFilePath;
-import de.frittenburger.email2pdfa.bo.EmailServiceAccountData;
-import de.frittenburger.email2pdfa.bo.PdfCreatorSignatureData;
-
-public interface Configuration {
-
-	Sandbox getSandbox();
-	List<EmailServiceAccountData> getEmailServiceAccountData();
-	List<EmailDataFilePath> getEmailDataFilePathes();
-	PdfCreatorSignatureData getPdfCreatorSignatureData();
-	String getName();
+	public String path;
 	
 }

@@ -37,6 +37,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.mail.Message;
@@ -99,6 +100,8 @@ public class NameServiceImpl implements NameService {
 	}
 
 
+
+
 	public EmailHeader getEmailHeader(Message message) throws GeneralSecurityException, MessagingException, ParseException, UnsupportedEncodingException {
 		
 		EmailHeader emailHeader = new EmailHeader();
@@ -122,7 +125,7 @@ public class NameServiceImpl implements NameService {
 			
 		String[] sender = message.getHeader("Sender");
 		emailHeader.sender = new EmailHeaderFrom[0];
-		if(sender != null)
+		if(sender != null && sender.length > 0 && !sender[0].trim().equals("")) //Empty Sender
 		{
 			if(sender.length != 1)
 				throw new MessagingException("Invalid Sender-Header");
@@ -155,33 +158,50 @@ public class NameServiceImpl implements NameService {
 		String hashtext = bigInt.toString(16);
 		
 		
-		String keyAddress = from[0];
-		if(sender != null)
-			keyAddress = sender[0];
+		String keyAddress = emailHeader.from[0].address;
+		if(emailHeader.sender.length > 0)
+			keyAddress = emailHeader.sender[0].address;
 		
-		emailHeader.senderkey = parseFromAddress(keyAddress);
-		emailHeader.mesgkey = parseFromAddress(keyAddress)+"_"+parseDate(emailHeader.date[0])+"_"+hashtext.substring(0,6);
+		emailHeader.senderkey = keyAddress;
+		emailHeader.mesgkey = keyAddress+"_"+parseDate(emailHeader.date[0])+"_"+hashtext.substring(0,6);
 		
 		return emailHeader;
 	}
 
 	
-	private String parseFromAddress(String email) throws AddressException {
+	public String parseFromAddress(String email) throws AddressException {
+		 if(email.trim().equals("")) throw new AddressException("Empty Address");
 		 InternetAddress emailAddr = new InternetAddress(email);
 	      emailAddr.validate();		
 	      return emailAddr.getAddress();
 	}
 
-	private String parseFromName(String email) throws AddressException {
+	public String parseFromName(String email) throws AddressException {
+		 if(email.trim().equals("")) throw new AddressException("Empty Address");
+
 		 InternetAddress emailAddr = new InternetAddress(email);
 	      emailAddr.validate();		
 	      return emailAddr.getPersonal();
 	}
 	
-	private String parseDate(String date) throws ParseException   {
+	
+	
+
+	private static  DateFormat[] dateformats = new DateFormat[]{
+				new MailDateFormat() , 
+				new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.ENGLISH) //Sun Feb 28 13:17:24 GMT+01:00 2016
+	};
+
+	public String parseDate(String date) throws ParseException   {
        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd_HHmm");
-		DateFormat df = new MailDateFormat();
-		Date result =  df.parse(date); 
+       Date result = null;
+       for(DateFormat df : dateformats)
+       {
+    	   result =  df.parse(date); 
+    	   if(result != null) break;
+       }
+       if(result == null)
+			throw new ParseException("could not parse "+date,0);
 		return formatter.format(result);
 	}
 
@@ -221,9 +241,6 @@ public class NameServiceImpl implements NameService {
 
 
 
-	public String parseContentId(String cid) {
-		return cid.substring(1, cid.length()-1);
-	}
 
 
 	public String getFolder(MessageContext mesgContext, ContentType contentType) {

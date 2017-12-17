@@ -18,9 +18,10 @@
 
 #image
 .jpg	=	image/jpeg
+.jpg	=	image/jpg
 .gif	=	image/gif
 .png	=	image/png
-
+.png    =   image/x-png
 	
 #multipart/report
 .txt	=	message/delivery-status

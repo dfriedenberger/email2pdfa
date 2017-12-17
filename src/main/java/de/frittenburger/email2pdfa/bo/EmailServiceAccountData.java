@@ -25,6 +25,7 @@ package de.frittenburger.email2pdfa.bo;
 
 public class EmailServiceAccountData {
 
+	public String name;
 	public String provider;
 	public String mailserver;
 	public String username;

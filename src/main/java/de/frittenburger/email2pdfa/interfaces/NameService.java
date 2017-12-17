@@ -37,17 +37,16 @@ import de.frittenburger.email2pdfa.bo.MessageContext;
 public interface NameService {
 
 
-
-	String parseContentId(String trim);
-
 	String getFolder(MessageContext mesgContext, ContentType contentType);
 
 	String getFilename(MessageContext mesgContext, ContentType contentType);
 
 	String parseExtension(String filename);
-	
+		
 	EmailHeader getEmailHeader(Message message) throws GeneralSecurityException, MessagingException, ParseException, UnsupportedEncodingException;
 
 	String parseValidFilename(String decodedFilename, ContentType contentType);
 
+	
+	
 }

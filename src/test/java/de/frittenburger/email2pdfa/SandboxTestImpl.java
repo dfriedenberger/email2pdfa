@@ -69,7 +69,11 @@ public class SandboxTestImpl implements Sandbox {
 	public String getInBoxPath() {
 		return inBoxPath; 
 	}
-
+	
+	public String getInBoxCachePath() {
+		return null;
+	}
+	
 	public String getContentPath() {
 		return contentPath;
 	}
@@ -116,6 +120,8 @@ public class SandboxTestImpl implements Sandbox {
 		  if (!f.delete())
 		    throw new FileNotFoundException("Failed to delete file: " + f);
 		}
+
+	
 
 	
 

@@ -35,6 +35,78 @@ public class TestNameService {
 	}
 
 	@Test
+	public void testErrorEmailHeaderInvalidDate() throws IOException, MessagingException, GeneralSecurityException, ParseException {
+		NameService service = new NameServiceImpl();
+		
+		MimeMessage message = readMime(resources + "/ErrorHeaderInvalidDate.eml");
+		try
+		{
+			service.getEmailHeader(message);
+			fail("has invalid date");
+		} 
+		catch(MessagingException e)
+		{
+			assertEquals("Invalid Date-Header",e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testErrorEmailHeaderInvalidSubject() throws IOException, MessagingException, GeneralSecurityException, ParseException {
+		NameService service = new NameServiceImpl();
+		
+		MimeMessage message = readMime(resources + "/ErrorHeaderInvalidSubject.eml");
+		try
+		{
+			service.getEmailHeader(message);
+			fail("has invalid from");
+		} 
+		catch(MessagingException e)
+		{
+			assertEquals("Invalid From-Header",e.getMessage());
+		}
+	}
+	
+
+	@Test
+	public void testErrorEmptyAdress() throws IOException, MessagingException, GeneralSecurityException, ParseException {
+		NameServiceImpl service = new NameServiceImpl();
+		
+		
+		
+		try
+		{
+			service.parseFromAddress("");
+			service.parseFromName("");
+			fail("has invalid from");
+		} 
+		catch(MessagingException e)
+		{
+			assertEquals("Empty Address",e.getMessage());
+		}
+	
+	
+	}
+	
+	@Test
+	public void testSpecialAddress() throws IOException, MessagingException, GeneralSecurityException, ParseException {
+		NameServiceImpl service = new NameServiceImpl();
+		
+		assertEquals("support@psw.net",service.parseFromAddress("=?UTF-8?Q?=20PSW=20GROUP=20GmbH=20&=20Co.=20KG?= <support@psw.net>"));
+		assertEquals(" PSW GROUP GmbH & Co. KG",service.parseFromName("=?UTF-8?Q?=20PSW=20GROUP=20GmbH=20&=20Co.=20KG?= <support@psw.net>"));
+
+	
+	}
+	
+	@Test
+	public void testSpecialDate() throws IOException, MessagingException, GeneralSecurityException, ParseException {
+		NameServiceImpl service = new NameServiceImpl();
+		
+		assertEquals("20160110_1419",service.parseDate("Sun, 10 Jan 2016 14:19:04 +0100"));
+		assertEquals("20160228_1317",service.parseDate("Sun Feb 28 13:17:24 GMT+01:00 2016"));
+	
+	}
+	
+	@Test
 	public void testParseValidFilename001() throws IOException, MessagingException, GeneralSecurityException, ParseException {
 		NameService service = new NameServiceImpl();
 		String valid_pattern = "abcABC123+=#.txt";

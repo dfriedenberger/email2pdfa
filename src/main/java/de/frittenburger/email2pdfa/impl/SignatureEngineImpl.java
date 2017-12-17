@@ -36,6 +36,9 @@ public class SignatureEngineImpl implements SignatureEngine {
 		
 		try
 		{
+		   if(message.getHeader("Content-Type") == null || message.getHeader("Content-Type").length == 0)
+		    	return SignatureInfo.create(false);
+
 		   SignatureInfo info = SignatureInfo.create(toolkit.isSigned(message));
 		   if(!info.hasSignature)
 			   return info;

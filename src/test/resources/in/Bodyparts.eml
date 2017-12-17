@@ -1,0 +1,65 @@
+MIME-Version: 1.0
+From: sender@example.org
+Date: Tue, 27 Sep 2016 23:42:26 +0200
+Message-ID: <1234>
+Subject: Attachment
+Content-Type: multipart/mixed; boundary=9999999999
+
+--9999999999
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment; filename=Herbstfeuerfest 2016
+X-Attachment-Id: xxxxx_123.1
+
+Text der Datei
+--9999999999
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+
+SGVsbG8gV29ybGQ=
+
+--9999999999
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: quoted-printable
+
+
+Ein Text und ein Bild
+
+--9999999999
+Content-Type: image/png;
+ name="robot1.png"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="robot1.png"
+
+SGVsbG8gV29ybGQ=
+
+--9999999999
+Content-Type: application/pdf;
+ name="Aus Kibu Trabczyn Adelbert Fri und Christine Kochanke.pdf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename*0="Aus Kibu  Trabczyn Adelbert Fri und Christine Kochanke.pdf"
+
+SGVsbG8gV29ybGQ=
+
+--9999999999
+Content-Type: text/html; charset=US-ASCII; name=Nachrichtenteil als Anhang
+Content-Disposition: attachment; filename=Nachrichtenteil als Anhang
+Content-Transfer-Encoding: base64
+X-Attachment-Id: b48e4cff34202d51_0.2
+
+SGVsbG8gV29ybGQ=
+
+--9999999999
+Content-Type: image/jpeg
+MIME-Version: 1.0
+Content-Transfer-Encoding: base64
+Content-ID: <selfie>
+Content-Disposition: inline; filename="selfie.jpg"
+Content-Disposition: attachment; filename="selfie.jpg"
+
+SGVsbG8gV29ybGQ=
+
+--9999999999--

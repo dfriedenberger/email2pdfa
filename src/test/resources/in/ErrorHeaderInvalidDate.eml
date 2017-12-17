@@ -1,0 +1,13 @@
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+From: Microsoft Exchange Server 2010
+To: Recipient <recipient@example.org>
+Subject: Fehler beim Abrufen der folgenden Nachricht mithilfe des
+ IMAP4-Protokolls: 1.
+Content-Transfer-Encoding: quoted-printable
+
+Der Server konnte die folgende Meldung nicht abrufen:
+...
+Die Nachricht noch nicht gel=F6scht wurde. M=F6glicherweise werden k=F6nnen=
+ Sie mit Outlook oder Outlook Web App anzeigen. Sie k=F6nnen auch den Absen=
+der, herauszufinden, welche die Meldung zu erreichen.=

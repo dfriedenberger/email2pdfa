@@ -23,10 +23,24 @@ package de.frittenburger.email2pdfa.interfaces;
  *  This copyright notice MUST APPEAR in all copies of the script!
  */
 
+import java.io.IOException;
+import java.util.List;
+
 import de.frittenburger.email2pdfa.bo.EmailServiceAccountData;
 
 public interface EmailService {
 
-	int getMessages(EmailServiceAccountData emailServiceAccountData, Sandbox sandbox);
+	void open(EmailServiceAccountData emailServiceAccountData) throws IOException;
+	
+	List<String> getFolders() throws IOException;
+	
+	Sequence getUnreadMessages(String folder) throws IOException;
+
+	void openFolder(String folder,Sequence sequence) throws IOException;
+	
+	boolean getMessages(Sandbox sandbox);
+	
+	void close();
+
 
 }

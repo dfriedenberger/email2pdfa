@@ -92,6 +92,14 @@ public class TestReadMimeMessage {
 
 	}
 	
+	@Test
+	public void testEmptyTransferEncoding() throws MimeMessageParserException {
+
+		MimeMessageParser mimeMessageParser = new MimeMessageParserImpl(new EmailCacheImpl());
+		mimeMessageParser.parse(resources + "/ErrorHeaderEmptyTransferEncoding.eml", new SandboxTestImpl().setMessagePath(out));
+	}
+	
+
 	/*
 	private static String individualMessageForParsing = "  \\in\\  " + " file.eml ";
 	@Test
