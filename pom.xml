@@ -6,7 +6,7 @@
   <name>Email2PDFA</name>
   
   <properties>
-     <jacksonxml.version>2.12.1</jacksonxml.version>
+     <jacksonxml.version>2.13.4.1</jacksonxml.version>
   </properties>
   
   <dependencies>
